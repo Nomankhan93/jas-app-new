@@ -1,3 +1,5 @@
+import { verificationErrorText } from '../../../lib/verify/validation'
+import { useI18n } from '../../../lib/i18n'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   ArrowLeft,
@@ -26,6 +28,7 @@ export const Route = createFileRoute('/verify/office-bearer/$officeBearerId')({
 })
 
 function OfficeBearerVerificationPage() {
+  const { language } = useI18n()
   const { officeBearerId } = Route.useParams()
   const [card, setCard] = useState<DesignationCardRecord | null>(null)
   const [loading, setLoading] = useState(true)
@@ -44,9 +47,9 @@ function OfficeBearerVerificationPage() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error
-              ? err.message
-              : 'Unable to verify this office bearer card.',
+            err instanceof Error && err.message === 'VERIFY_INVALID_NUMBER'
+              ? ({ en: 'Invalid office-bearer card ID. Use JAS-OB-YYYY-XXXXXXXX format.', ur: 'عہدیدار کارڈ نمبر درست نہیں۔ JAS-OB-YYYY-XXXXXXXX کی شکل استعمال کریں۔', sd: 'عهديدار ڪارڊ نمبر درست ناهي. JAS-OB-YYYY-XXXXXXXX جي صورت استعمال ڪريو.' })[language]
+              : verificationErrorText(language, err instanceof Error ? err.message : ''),
           )
           setCard(null)
         }
@@ -60,7 +63,7 @@ function OfficeBearerVerificationPage() {
     return () => {
       cancelled = true
     }
-  }, [officeBearerId])
+  }, [officeBearerId, language])
 
   if (loading) {
     return (

@@ -1539,6 +1539,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_verification_budget_v2: { Args: { _resource: string; _client: string }; Returns: boolean }
+      lookup_public_office_bearer: { Args: { _card_id: string }; Returns: Json }
+      admin_email_delivery_health: { Args: Record<string, never>; Returns: Json }
+      retry_notification_email_delivery: { Args: { _delivery_id: string }; Returns: boolean }
       consume_public_verification_budget: { Args: { _member_no: string }; Returns: boolean }
       admin_send_bulk_notification: {
         Args: {

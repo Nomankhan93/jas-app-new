@@ -69,3 +69,7 @@ test-results/
 
 # Local design patch backups
 /.jas-design-backups/
+
+# Local release reports and backup exports
+release-reports/
+jas-backups/

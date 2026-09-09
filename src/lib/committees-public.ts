@@ -1,3 +1,4 @@
+import { verifyOfficeBearerAction } from './verify/office-bearer'
 import { supabase } from './supabase/client'
 import {
   getCommitteeStatusClass,
@@ -168,7 +169,7 @@ export function formatOfficeBearerDisplayText(value: string | null | undefined) 
 }
 
 export function buildOfficeBearerId(record: Pick<PublicCommitteeMemberRecord, 'id' | 'created_at'>) {
-  const year = new Date(record.created_at || Date.now()).getFullYear()
+  const year = new Date(record.created_at || Date.now()).getUTCFullYear()
   const shortId = record.id.replace(/-/g, '').slice(0, 8).toUpperCase()
   return `JAS-OB-${year}-${shortId}`
 }
@@ -197,57 +198,7 @@ export function getOfficeBearerVerificationUrl(record: Pick<PublicCommitteeMembe
 }
 
 export async function fetchOfficeBearerVerification(officeBearerId: string) {
-  const requestedId = officeBearerId.trim().toUpperCase()
-  const shortId = requestedId.split('-').pop()?.replace(/[^A-Z0-9]/g, '') || ''
-
-  if (!requestedId || shortId.length < 6) return null
-
-  const { data: membershipRows, error } = await supabase
-    .from('organization_committee_members' as never)
-    .select(committeeMemberPublicSelect)
-    .eq('status' as never, 'active' as never)
-    .limit(500)
-
-  if (error) throw error
-
-  const rows = (membershipRows ?? []) as unknown as PublicCommitteeMemberRecord[]
-  const row = rows.find((item) => {
-    const generatedId = buildOfficeBearerId(item).toUpperCase()
-    const generatedShortId = item.id.replace(/-/g, '').slice(0, 8).toUpperCase()
-    return generatedId === requestedId || generatedShortId === shortId
-  })
-
-  if (!row) return null
-
-  const { data: committee, error: committeeError } = await supabase
-    .from('organization_committees' as never)
-    .select(committeePublicSelect)
-    .eq('id' as never, row.committee_id as never)
-    .eq('status' as never, 'active' as never)
-    .eq('public_display' as never, true as never)
-    .maybeSingle()
-
-  if (committeeError) throw committeeError
-  if (!committee) return null
-
-  const member: DesignationCardMember = {
-    id: row.member_id,
-    user_id: null,
-    full_name: row.full_name_snapshot,
-    father_name: row.father_name_snapshot,
-    member_no: row.member_no_snapshot,
-    district: row.district_snapshot,
-    taluka: row.taluka_snapshot,
-    photo_url: null,
-    status: 'approved',
-  }
-
-  return {
-    ...row,
-    committee: committee as unknown as PublicCommitteeRecord,
-    member,
-    photoSignedUrl: null,
-  } satisfies DesignationCardRecord
+  return verifyOfficeBearerAction({ data: officeBearerId })
 }
 
 export async function fetchPublicCommittees() {

@@ -1,3 +1,4 @@
+import { enforceVerificationBudget } from './budget'
 // src/lib/verify/actions.ts
 import { normalizeVerificationNumber } from './validation'
 import { createServerFn } from '@tanstack/react-start'
@@ -273,10 +274,7 @@ export const verifyMemberAction = createServerFn({ method: 'POST' })
   .inputValidator(validateVerifyInput)
   .handler(async ({ data }): Promise<VerifyMemberResult> => {
     try {
-    const supabaseAdmin = createSupabaseAdminClient()
-    const { data: permitted, error: limitError } = await supabaseAdmin.rpc('consume_public_verification_budget', { _member_no: data.memberNo })
-    if (limitError) throw new Error('VERIFY_UNAVAILABLE')
-    if (permitted !== true) throw new Error('VERIFY_RATE_LIMITED')
+    const supabaseAdmin = await enforceVerificationBudget(data.memberNo)
 
     const { data: member, error } = await supabaseAdmin
       .from('members')

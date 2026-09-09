@@ -29,7 +29,12 @@
     "lock:check": "bash scripts/check-lockfile-integrity.sh",
     "preflight": "npm run env:check && npm run lock:check && npm run scan:secrets && npm run check && npm run build",
     "email:templates:check": "node scripts/check-email-templates.mjs",
-    "push:check": "node scripts/check-web-push.mjs"
+    "push:check": "node scripts/check-web-push.mjs",
+    "test:e2e": "playwright test",
+    "release:check": "npm run check && npm test && npm run build && node scripts/performance-report.mjs",
+    "backup:storage": "node scripts/storage-backup.mjs backup",
+    "backup:verify": "node scripts/storage-backup.mjs verify",
+    "restore:storage": "node scripts/storage-backup.mjs restore"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
@@ -59,6 +64,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/react-devtools": "latest",

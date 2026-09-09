@@ -435,6 +435,8 @@ function AdminPage() {
           membersQuery = membersQuery.order("created_at", { ascending: false });
         }
 
+        membersQuery = membersQuery.order("id", { ascending: true });
+
         const pageFrom = memberPage * ADMIN_MEMBERS_PAGE_SIZE;
         const pageTo = pageFrom + ADMIN_MEMBERS_PAGE_SIZE - 1;
 
@@ -997,6 +999,10 @@ function AdminPage() {
                   ? adminCopy.membership.exportingCardCsv
                   : adminCopy.membership.exportCardCsv}
               </button>
+
+              <button type="button" className="secondary-btn" onClick={() => {
+                setStatusFilter('pending'); setSortBy('oldest'); setMemberPage(0);
+              }}>Review oldest pending</button>
 
               {hasActiveFilters ? (
                 <button

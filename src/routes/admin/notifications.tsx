@@ -1,3 +1,4 @@
+import { EmailDeliveryHealth } from '../../components/admin/EmailDeliveryHealth'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   AlertTriangle,
@@ -362,6 +363,8 @@ function AdminNotificationsPage() {
             <StatCard title="Dead" value={deliveryStats.dead} icon={<XCircle />} />
           </div>
         </section>
+
+        <EmailDeliveryHealth />
 
         {error ? (
           <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
