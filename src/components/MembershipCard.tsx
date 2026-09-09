@@ -1,14 +1,9 @@
-import type { ReactNode } from 'react'
-import {
-  getMemberDesignationTitle,
-  type MemberCardDesignation,
-} from '../lib/member-card-designation'
-
+import type { CSSProperties, ReactNode } from 'react'
+import { getMemberDesignationTitle, type MemberCardDesignation } from '../lib/member-card-designation'
 import { buildMemberCardIssueLabel } from '../lib/member-card-config'
 
 export const CARD_WIDTH = 1280
 export const CARD_HEIGHT = 760
-
 export type CardSide = 'front' | 'back'
 
 export type MembershipCardMember = {
@@ -48,583 +43,215 @@ type MembershipCardProps = {
   verifyUrl: string
 }
 
+const NAVY = '#142d4e'
+const TEAL = '#087f8c'
+const MUTED = '#52647b'
+const LINE = '#dce5ef'
 const SIGNATURE_PATH = '/jas/signature.png'
+const boundedText: CSSProperties = { display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }
+const labelStyle: CSSProperties = { margin: 0, color: MUTED, fontSize: 12, fontWeight: 700, letterSpacing: 1.3, lineHeight: 1.4, textTransform: 'uppercase' }
 
-export function MembershipCard({
-  side,
-  member,
-  photoUrl,
-  logoUrl,
-  flagUrl,
-  qrUrl,
-  verifyUrl,
-}: MembershipCardProps) {
+export function MembershipCard({ side, member, photoUrl, logoUrl, qrUrl, verifyUrl }: MembershipCardProps) {
   return (
     <article
-      className="relative isolate flex shrink-0 flex-col overflow-hidden rounded-[2rem] border border-yellow-500/40 bg-white text-slate-950 shadow-2xl ring-1 ring-emerald-950/10"
-      style={{
-        width: `${CARD_WIDTH}px`,
-        minWidth: `${CARD_WIDTH}px`,
-        height: `${CARD_HEIGHT}px`,
-      }}
+      dir="ltr"
+      lang="en"
+      aria-label={`${member.full_name} membership card, ${side}`}
+      data-card-design="navy-teal-v2"
+      style={{ width: CARD_WIDTH, minWidth: CARD_WIDTH, height: CARD_HEIGHT, flexShrink: 0, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 24, border: `1px solid ${LINE}`, background: '#ffffff', color: NAVY, fontFamily: 'Arial, "Segoe UI", sans-serif', lineHeight: 1.4, textAlign: 'left', colorScheme: 'light' }}
     >
-      {side === 'front' ? (
-        <CardFront
-          member={member}
-          photoUrl={photoUrl}
-          logoUrl={logoUrl}
-          flagUrl={flagUrl}
-          qrUrl={qrUrl}
-          verifyUrl={verifyUrl}
-        />
-      ) : (
-        <CardBack
-          member={member}
-          logoUrl={logoUrl}
-          flagUrl={flagUrl}
-          qrUrl={qrUrl}
-          verifyUrl={verifyUrl}
-        />
-      )}
+      <CardHeader member={member} logoUrl={logoUrl} back={side === 'back'} />
+      {side === 'front'
+        ? <CardFront member={member} photoUrl={photoUrl} qrUrl={qrUrl} verifyUrl={verifyUrl} />
+        : <CardBack member={member} qrUrl={qrUrl} verifyUrl={verifyUrl} />}
+      <footer style={{ height: 54, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, borderTop: `1px solid ${LINE}`, padding: '0 32px', background: '#f4f7fb', fontSize: 12, color: MUTED }}>
+        <span>Valid only when the live QR record confirms approved, active membership.</span>
+        <span style={{ fontWeight: 700, color: NAVY, whiteSpace: 'nowrap' }}>Sindh, Pakistan</span>
+      </footer>
     </article>
   )
 }
 
-function CardFront({
-  member,
-  photoUrl,
-  logoUrl,
-  flagUrl,
-  qrUrl,
-  verifyUrl,
-}: Omit<MembershipCardProps, 'side'>) {
-  const profession = member.profession || 'Not provided'
-  const designationTitle = getMemberDesignationTitle(member.activeDesignation)
-
+function CardHeader({ member, logoUrl, back }: { member: MembershipCardMember; logoUrl: string | null; back: boolean }) {
+  const status = { approved: 'Approved member', pending: 'Pending review', rejected: 'Not approved' }[member.status]
   return (
-    <>
-      <CardHeader
-        logoUrl={logoUrl}
-        label="Digital Member ID"
-        title="JATT ALLIANCE SINDH"
-        subtitle="Official verified membership card"
-        badge="Verified"
-      />
-
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-white">
-        <SoftBackground logoUrl={logoUrl} flagUrl={flagUrl} />
-
-        <div className="relative grid h-full grid-cols-[270px_1fr_230px] gap-8 p-8">
-          <section className="space-y-4">
-            <div className="rounded-[2.2rem] bg-gradient-to-br from-yellow-400 via-yellow-300 to-amber-500 p-[5px] shadow-xl">
-              {photoUrl ? (
-                <img
-                  src={photoUrl}
-                  alt={`${member.full_name} profile photo`}
-                  className="h-[250px] w-[250px] rounded-[1.9rem] border-4 border-white object-cover object-top"
-                  draggable={false}
-                />
-              ) : (
-                <div className="flex h-[250px] w-[250px] items-center justify-center rounded-[1.9rem] border-4 border-white bg-slate-100 text-[16px] font-bold text-slate-500">
-                  No photo
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-[1.5rem] border border-yellow-400 bg-slate-950 px-5 py-4 text-center shadow-lg">
-              <p className="text-[13px] font-black uppercase tracking-[0.22em] text-yellow-300">
-                Member No
-              </p>
-              <p className="mt-2 break-all text-[22px] font-black leading-tight text-white">
-                {member.member_no || 'Not issued'}
-              </p>
-            </div>
-
-            {designationTitle ? (
-              <div className="rounded-[1.1rem] border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-center shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
-                  JAS Designation
-                </p>
-                <p className="mt-1 line-clamp-2 break-words text-[18px] font-black leading-tight text-slate-950">
-                  {designationTitle}
-                </p>
-              </div>
-            ) : null}
-          </section>
-
-          <section className="flex flex-col justify-between">
-            <div>
-              <p className="text-[16px] font-black uppercase tracking-[0.18em] text-slate-500">
-                Member Name
-              </p>
-              <h3 className="mt-2 text-[46px] font-black leading-[1.04] tracking-tight text-slate-950">
-                {member.full_name}
-              </h3>
-
-              <div className="mt-5 h-[3px] w-28 rounded-full bg-gradient-to-r from-slate-950 via-yellow-500 to-yellow-300" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-              <Info label="Father Name" value={member.father_name} />
-              <Info label="District" value={member.district} />
-              <Info label="Taluka" value={member.taluka || 'Not provided'} />
-              <Info label="Profession" value={profession} />
-              <Info
-                label="Approved Date"
-                value={formatDate(member.approved_at)}
-              />
-              <Info label="Status" value="Approved" />
-            </div>
-
-            <div className="rounded-[1.4rem] border border-slate-200 bg-white/90 px-5 py-4 shadow-sm">
-              <p className="text-[13px] font-black uppercase tracking-[0.18em] text-slate-500">
-                Verification Notice
-              </p>
-              <p className="mt-2 text-[15px] font-semibold leading-6 text-slate-700">
-                This card is valid only when the QR verification page confirms
-                the current membership status.
-              </p>
-            </div>
-          </section>
-
-          <QrPanel
-            qrUrl={qrUrl}
-            verifyUrl={verifyUrl}
-          />
+    <header style={{ height: 132, flexShrink: 0, boxSizing: 'border-box', padding: '24px 32px', background: NAVY, borderBottom: `5px solid ${TEAL}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, color: '#ffffff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
+        {logoUrl
+          ? <img src={logoUrl} alt="Jatt Alliance Sindh logo" draggable={false} style={{ width: 76, height: 76, flexShrink: 0, borderRadius: '50%', objectFit: 'contain', background: '#ffffff' }} />
+          : <span style={{ width: 76, height: 76, display: 'grid', placeItems: 'center', flexShrink: 0, borderRadius: '50%', border: '2px solid #87d7df', fontSize: 25, fontWeight: 800 }}>JAS</span>}
+        <div>
+          <h2 style={{ margin: 0, fontSize: 33, fontWeight: 800, letterSpacing: .5, lineHeight: 1.15 }}>JATT ALLIANCE SINDH</h2>
+          <p style={{ margin: '9px 0 0', color: '#aee1e7', fontSize: 16, fontWeight: 600, letterSpacing: 1.2 }}>Education · Health · Dignity</p>
         </div>
       </div>
-
-      <CardFooter>
-        This card is digitally generated by Jatt Alliance Sindh. QR verification
-        confirms the current membership record.
-      </CardFooter>
-    </>
-  )
-}
-
-function CardBack({
-  member,
-  logoUrl,
-  flagUrl,
-  qrUrl,
-  verifyUrl,
-}: Omit<MembershipCardProps, 'side' | 'photoUrl'>) {
-  return (
-    <>
-      <CardHeader
-        logoUrl={logoUrl}
-        label="Jatt Alliance Sindh"
-        title="CARDHOLDER DETAILS"
-        subtitle="Address, emergency contact, verification and issuing authority"
-        badge="Card Details"
-      />
-
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-white">
-        <SoftBackground logoUrl={logoUrl} flagUrl={flagUrl} />
-
-        <div className="relative grid h-full min-h-0 grid-cols-[1fr_260px] gap-4 p-5">
-          <section className="grid h-full min-h-0 grid-cols-2 grid-rows-[1fr_1.1fr_1.25fr] gap-3.5">
-            <BackPanel title="Residential Address" tone="gold">
-              <p className="line-clamp-2 break-words text-[14px] font-black leading-snug text-slate-950">
-                {member.address || 'Full street address not provided.'}
-              </p>
-              <p className="mt-1.5 break-words text-[12.5px] font-bold text-slate-800">
-                {member.taluka || 'Taluka not provided'}, {member.district}
-              </p>
-            </BackPanel>
-
-            <BackPanel title="Emergency Contact">
-              {member.emergency_contact_name || member.emergency_contact_mobile ? (
-                <div className="space-y-1">
-                  <p className="line-clamp-1 break-words text-[14px] font-black text-slate-950">
-                    {member.emergency_contact_name || 'Name not provided'}
-                  </p>
-                  <p className="text-[12px] font-bold text-slate-700">
-                    <span className="mr-1 text-[10px] font-black uppercase tracking-wider text-slate-500">Relation:</span>
-                    {member.emergency_contact_relation || 'N/A'}
-                  </p>
-                  <p className="text-[14px] font-black text-slate-950">
-                    {formatMobile(member.emergency_contact_mobile)}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-[13px] font-bold text-slate-500">Not provided.</p>
-              )}
-            </BackPanel>
-
-            <BackPanel title="Member Information">
-              <div className="grid w-full grid-cols-3 gap-x-3 gap-y-1.5">
-                <MiniInfo label="DOB" value={formatDate(member.date_of_birth)} />
-                <MiniInfo label="Gender" value={member.gender || 'N/A'} />
-                <MiniInfo label="Blood" value={member.blood_group || 'N/A'} />
-                <MiniInfo label="Education" value={member.education || 'N/A'} />
-                <MiniInfo
-                  label="Designation"
-                  value={getMemberDesignationTitle(member.activeDesignation) || 'Member'}
-                />
-                <MiniInfo label="CNIC" value={formatCnic(member.cnic)} />
-                <MiniInfo label="Mobile" value={formatMobile(member.mobile)} />
-              </div>
-            </BackPanel>
-
-            <BackPanel title="Verification Instructions">
-              <p className="text-[12px] font-semibold leading-relaxed text-slate-700">
-                Scan the QR code or visit the verification URL. Match verified name, member number, district and approval status before accepting this card as valid.
-              </p>
-            </BackPanel>
-
-            <BackPanel title="Terms and Conditions">
-              <ul className="list-disc space-y-1 pl-3.5 text-[11.5px] font-semibold leading-tight text-slate-700">
-                <li>This card remains property of Jatt Alliance Sindh.</li>
-                <li>Misuse, alteration or transfer is strictly prohibited.</li>
-                <li>Validity depends on live QR verification status.</li>
-              </ul>
-            </BackPanel>
-
-            <BackPanel
-              title="Issuing Authority"
-              tone="dark"
-              contentClassName="flex flex-1 flex-col justify-between"
-            >
-              <div className="flex h-[75px] items-center overflow-hidden rounded-xl bg-white/80 px-2 ring-1 ring-slate-200">
-                <img
-                  src={SIGNATURE_PATH}
-                  alt="Authorized signature"
-                  className="h-[70px] w-full object-contain object-left brightness-75 contrast-150 saturate-0"
-                  draggable={false}
-                />
-              </div>
-
-              <div>
-                <div className="h-[1.5px] w-full bg-slate-400" />
-                <p className="mt-1 text-[15px] font-black leading-none text-slate-950">
-                  Authorized Signature
-                </p>
-                <p className="mt-0.5 text-[11px] font-black uppercase tracking-[0.08em] text-slate-600">
-                  GENERAL SECRETARY
-                </p>
-              </div>
-            </BackPanel>
-          </section>
-
-          <aside className="flex h-full min-h-0 flex-col justify-between gap-2.5 rounded-[1.25rem] border border-slate-200 bg-white/95 p-3.5 shadow-md">
-            <div className="rounded-xl border border-yellow-400 bg-slate-950 px-3 py-2.5 text-center shadow-sm">
-              <p className="text-[10.5px] font-black uppercase tracking-[0.16em] text-yellow-300">
-                Issue No / Version
-              </p>
-              <p className="mt-0.5 break-all text-[15px] font-black text-white">
-                {buildMemberCardIssueLabel(member.member_no)}
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-white p-2 text-center shadow-sm ring-1 ring-slate-200">
-              {qrUrl ? (
-                <img
-                  src={qrUrl}
-                  alt="Verification QR code"
-                  className="mx-auto h-[160px] w-[160px] rounded-lg bg-white p-1"
-                  draggable={false}
-                />
-              ) : (
-                <div className="mx-auto flex h-[160px] w-[160px] items-center justify-center rounded-lg bg-slate-100 text-[12px] font-bold text-slate-500 ring-1 ring-slate-200">
-                  QR unavailable
-                </div>
-              )}
-
-              <p className="mt-1.5 text-center text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
-                Scan to verify
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-              <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                Verification URL
-              </p>
-              <p className="mt-0.5 text-[10.5px] font-bold leading-tight text-slate-900 break-words [overflow-wrap:anywhere]">
-                {formatVerifyUrlForDisplay(verifyUrl) || 'Verification link unavailable'}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-yellow-300 bg-yellow-50/80 p-2.5">
-              <p className="text-[10px] font-black uppercase tracking-wide text-yellow-800">
-                Organization
-              </p>
-              <p className="mt-0.5 text-[13px] font-black leading-tight text-slate-950">
-                Jatt Alliance Sindh
-              </p>
-              <p className="text-[10.5px] font-semibold text-slate-600">
-                Sindh, Pakistan
-              </p>
-            </div>
-          </aside>
-        </div>
-      </div>
-
-      <CardFooter>
-        This card is valid only when the QR verification page confirms the membership as approved and active.
-      </CardFooter>
-    </>
-  )
-}
-
-function CardHeader({
-  logoUrl,
-  label,
-  title,
-  subtitle,
-  badge,
-}: {
-  logoUrl: string | null
-  label: string
-  title: string
-  subtitle: string
-  badge: string
-}) {
-  return (
-    <header className="relative h-[160px] shrink-0 overflow-hidden bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 px-8 py-5 text-white">
-      <div className="absolute right-0 top-0 h-48 w-48 rounded-bl-full bg-yellow-300/15" />
-      <div className="absolute bottom-0 left-0 h-32 w-32 rounded-tr-full bg-white/8" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.20),transparent_34%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-[4px] bg-gradient-to-r from-yellow-500 via-yellow-300 to-amber-600" />
-
-      <div className="relative flex items-center justify-between gap-6">
-        <div className="flex min-w-0 items-center gap-4">
-          <LogoMark logoUrl={logoUrl} />
-
-          <div className="min-w-0 max-w-[830px]">
-            <p className="text-[12px] font-black uppercase tracking-[0.3em] text-yellow-300">
-              {label}
-            </p>
-
-            <h2 className="mt-1.5 whitespace-nowrap text-[48px] font-black uppercase leading-none tracking-tight text-white">
-              {title}
-            </h2>
-
-            <p className="mt-2 text-[14px] font-semibold text-emerald-50">
-              {subtitle}
-            </p>
-          </div>
-        </div>
-
-        <div className="min-w-[150px] whitespace-nowrap rounded-xl border border-yellow-300/80 bg-yellow-400/90 px-5 py-2.5 text-center text-[15px] font-black uppercase tracking-wider text-slate-950 shadow-md backdrop-blur-sm">
-          {badge}
-        </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <p style={{ margin: '0 0 9px', fontSize: 12, letterSpacing: 2, color: '#c7d8e9', textTransform: 'uppercase', fontWeight: 700 }}>{back ? 'Cardholder information' : 'Membership card'}</p>
+        <span style={{ display: 'inline-block', padding: '7px 14px', borderRadius: 6, fontSize: 13, fontWeight: 700, background: member.status === 'approved' ? '#d6f2ee' : '#fff1ce', color: member.status === 'approved' ? '#07574d' : '#784e09' }}>{status}</span>
       </div>
     </header>
   )
 }
 
-function LogoMark({ logoUrl }: { logoUrl: string | null }) {
-  return logoUrl ? (
-    <img
-      src={logoUrl}
-      alt="Jatt Alliance Sindh logo"
-      className="h-20 w-20 rounded-full border-2 border-yellow-400 bg-white object-cover object-top shadow-xl"
-      draggable={false}
-    />
-  ) : (
-    <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-yellow-400 bg-slate-950 text-lg font-black text-yellow-300 shadow-xl">
-      JAS
+function CardFront({ member, photoUrl, qrUrl, verifyUrl }: Pick<MembershipCardProps, 'member' | 'photoUrl' | 'qrUrl' | 'verifyUrl'>) {
+  const designation = getMemberDesignationTitle(member.activeDesignation) || 'Member'
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '244px minmax(0, 1fr) 240px', gap: 30, padding: 30, boxSizing: 'border-box' }}>
+      <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: 280, width: 244, boxSizing: 'border-box', overflow: 'hidden', borderRadius: 12, border: `1px solid ${LINE}`, background: '#edf2f7' }}>
+          {photoUrl
+            ? <img src={photoUrl} alt={`${member.full_name} profile photo`} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+            : <div style={{ height: '100%', display: 'grid', placeItems: 'center', fontSize: 18, color: MUTED }}>Photo unavailable</div>}
+        </div>
+        <div style={{ marginTop: 16, padding: '15px 16px', background: NAVY, borderRadius: 10, color: '#ffffff' }}>
+          <p style={{ ...labelStyle, color: '#aee1e7', fontSize: 11 }}>Membership number</p>
+          <p style={{ margin: '6px 0 0', fontSize: fitSize(member.member_no || '', 23, 18, 20), fontWeight: 800, letterSpacing: .2, overflowWrap: 'anywhere' }}>{member.member_no || 'Not issued'}</p>
+        </div>
+        <div style={{ marginTop: 17 }}>
+          <p style={labelStyle}>Designation</p>
+          <p style={{ ...boundedText, WebkitLineClamp: 3, margin: '5px 0 0', fontSize: fitSize(designation, 20, 14, 28), fontWeight: 700, lineHeight: 1.35, overflowWrap: 'anywhere' }}>{designation}</p>
+        </div>
+      </section>
+      <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '4px 0' }}>
+        <div>
+          <p style={labelStyle}>Member name</p>
+          <h3 style={{ ...boundedText, WebkitLineClamp: 3, margin: '9px 0 0', fontSize: fitSize(member.full_name, 43, 25, 23), fontWeight: 800, lineHeight: 1.15, letterSpacing: -.7, overflowWrap: 'anywhere' }}>{member.full_name}</h3>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 26, rowGap: 25, borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}`, padding: '25px 0', marginBlock: 20 }}>
+          <Field label="Father name" value={member.father_name} />
+          <Field label="District" value={member.district} />
+          <Field label="Taluka" value={member.taluka} />
+          <Field label="Profession" value={member.profession} />
+          <Field label="Approved on" value={member.status === 'approved' ? formatDate(member.approved_at) : 'Not approved'} />
+          <Field label="Blood group" value={member.blood_group} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, color: MUTED }}>
+          <span style={{ width: 4, alignSelf: 'stretch', flexShrink: 0, background: TEAL, borderRadius: 2 }} />
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7 }}>This card identifies the named JAS member. Scan the QR code to confirm the current membership record.</p>
+        </div>
+      </section>
+      <aside style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18, borderLeft: `1px solid ${LINE}`, paddingLeft: 20, minWidth: 0 }}>
+        <p style={{ ...labelStyle, color: TEAL, textAlign: 'center' }}>Digital verification</p>
+        <QrBlock qrUrl={qrUrl} size={184} />
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 14, fontWeight: 700 }}>Scan to verify</p>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: MUTED, lineHeight: 1.65, overflowWrap: 'anywhere' }}>{displayVerifyUrl(verifyUrl)}</p>
+        <p style={{ margin: '10px 0 0', textAlign: 'center', color: TEAL, fontSize: 11, fontWeight: 700, letterSpacing: 1.3 }}>PERSONAL · NON-TRANSFERABLE</p>
+      </aside>
     </div>
   )
 }
 
-function SoftBackground({
-  logoUrl,
-  flagUrl,
-}: {
-  logoUrl: string | null
-  flagUrl: string | null
-}) {
+function CardBack({ member, qrUrl, verifyUrl }: Pick<MembershipCardProps, 'member' | 'qrUrl' | 'verifyUrl'>) {
+  const designation = getMemberDesignationTitle(member.activeDesignation) || 'Member'
   return (
-    <>
-      {flagUrl ? (
-        <>
-          <img
-            src={flagUrl}
-            alt=""
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.09] mix-blend-multiply"
-            draggable={false}
-          />
-          <div className="pointer-events-none absolute inset-0 bg-white/[0.80]" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/[0.94] via-white/[0.84] to-white/[0.74]" />
-        </>
-      ) : null}
-
-      {logoUrl ? (
-        <img
-          src={logoUrl}
-          alt=""
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full object-cover opacity-[0.04]"
-          draggable={false}
-        />
-      ) : null}
-    </>
-  )
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[13px] font-black uppercase tracking-[0.16em] text-slate-500">
-        {label}
-      </p>
-      <p className="mt-2 break-words text-[21px] font-black leading-tight text-slate-950">
-        {value}
-      </p>
-    </div>
-  )
-}
-
-function MiniInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[9.5px] font-black uppercase tracking-wider text-emerald-800">
-        {label}
-      </p>
-      <p
-        className="mt-0.5 truncate text-[12.5px] font-black leading-tight text-slate-950"
-        title={value}
-      >
-        {value}
-      </p>
-    </div>
-  )
-}
-
-function BackPanel({
-  title,
-  children,
-  tone = 'light',
-  contentClassName = '',
-}: {
-  title: string
-  children: ReactNode
-  tone?: 'light' | 'gold' | 'dark'
-  contentClassName?: string
-}) {
-  const toneClass =
-    tone === 'gold'
-      ? 'border-amber-300/80 bg-amber-50/60'
-      : tone === 'dark'
-        ? 'border-slate-300 bg-slate-50/80'
-        : 'border-slate-200 bg-white/90'
-
-  return (
-    <section
-      className={`flex min-h-0 flex-col overflow-hidden rounded-[1rem] border p-3 shadow-sm ${toneClass}`}
-    >
-      <h3 className="shrink-0 text-[10.5px] font-black uppercase tracking-[0.16em] text-emerald-800">
-        {title}
-      </h3>
-
-      <div
-        className={`mt-1.5 min-h-0 text-[12.5px] font-semibold leading-normal text-slate-700 ${contentClassName}`}
-      >
-        {children}
-      </div>
-    </section>
-  )
-}
-
-function QrPanel({
-  qrUrl,
-  verifyUrl,
-}: {
-  qrUrl: string | null
-  verifyUrl: string
-}) {
-  return (
-    <aside className="flex items-center justify-center">
-      <div className="flex h-[365px] w-[220px] flex-col items-center justify-center rounded-[2rem] border border-slate-200 bg-white/95 px-4 py-5 shadow-lg">
-        {qrUrl ? (
-          <img
-            src={qrUrl}
-            alt="Verification QR code"
-            className="h-[170px] w-[170px] rounded-xl bg-white p-1.5 ring-1 ring-slate-200"
-            draggable={false}
-          />
-        ) : (
-          <div className="flex h-[170px] w-[170px] items-center justify-center rounded-xl bg-slate-100 text-[12px] font-bold text-slate-500 ring-1 ring-slate-200">
-            QR unavailable
+    <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 276px', gap: 26, padding: 28, boxSizing: 'border-box' }}>
+      <div style={{ minWidth: 0, display: 'grid', gridTemplateRows: '136px 157px minmax(0, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <Panel title="Residential address">
+            <p style={{ ...boundedText, WebkitLineClamp: 3, margin: '9px 0 0', fontSize: fitSize(member.address || '', 17, 13, 70), fontWeight: 700, lineHeight: 1.4, overflowWrap: 'anywhere' }}>{member.address || 'Not provided'}</p>
+            <p style={{ margin: '7px 0 0', fontSize: 13, color: MUTED }}>{[member.taluka, member.district].filter(Boolean).join(', ')}</p>
+          </Panel>
+          <Panel title="Emergency contact">
+            <p style={{ ...boundedText, margin: '9px 0 0', fontSize: fitSize(member.emergency_contact_name || '', 18, 13, 30), fontWeight: 700, lineHeight: 1.3, overflowWrap: 'anywhere' }}>{member.emergency_contact_name || 'Not provided'}</p>
+            <p style={{ margin: '5px 0 0', fontSize: 13, color: MUTED }}>Relation: {member.emergency_contact_relation || 'Not provided'}</p>
+            <p style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 700, color: TEAL }}>{formatMobile(member.emergency_contact_mobile)}</p>
+          </Panel>
+        </div>
+        <Panel title="Personal record">
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '14px 18px', marginTop: 12 }}>
+            <Field small label="CNIC" value={formatCnic(member.cnic)} />
+            <Field small label="Mobile" value={formatMobile(member.mobile)} />
+            <Field small label="Date of birth" value={formatDate(member.date_of_birth)} />
+            <Field small label="Gender" value={member.gender} />
+            <Field small label="Education" value={member.education} />
+            <Field small label="Blood group" value={member.blood_group} />
+            <div style={{ gridColumn: 'span 2', minWidth: 0 }}><Field small label="Designation" value={designation} /></div>
           </div>
-        )}
-
-        <p className="mt-5 text-center text-[14px] font-black uppercase tracking-[0.16em] text-slate-500">
-          Scan to verify
-        </p>
-
-        <p className="mt-3 line-clamp-3 break-all text-center text-[11px] font-bold leading-4 text-slate-500">
-          {formatVerifyUrlForDisplay(verifyUrl) || 'Verification link unavailable'}
-        </p>
+        </Panel>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, minHeight: 0 }}>
+          <Panel title="Cardholder guidance">
+            <ul style={{ margin: '10px 0 0', paddingLeft: 17, fontSize: 13, color: MUTED, lineHeight: 1.65, listStyle: 'disc' }}>
+              <li>This card remains the property of Jatt Alliance Sindh.</li>
+              <li>Misuse, alteration or transfer is prohibited.</li>
+              <li>Match the name, member number and approval status with the live verification record.</li>
+            </ul>
+          </Panel>
+          <section style={{ display: 'flex', flexDirection: 'column', minHeight: 0, paddingTop: 3 }}>
+            <p style={{ ...labelStyle, color: TEAL }}>Issuing authority</p>
+            <img src={SIGNATURE_PATH} alt="Authorized signature" draggable={false} style={{ width: 230, height: 80, maxWidth: '100%', objectFit: 'contain', objectPosition: 'left center', margin: '6px 0', flexShrink: 0 }} />
+            <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 7 }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Authorized Signature</p>
+              <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED, fontWeight: 700, letterSpacing: 1 }}>GENERAL SECRETARY</p>
+            </div>
+          </section>
+        </div>
       </div>
-    </aside>
+      <aside style={{ borderRadius: 12, padding: 20, boxSizing: 'border-box', background: '#edf5f8', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+        <div>
+          <p style={{ ...labelStyle, color: TEAL, fontSize: 11 }}>Issue number / version</p>
+          <p style={{ margin: '7px 0 0', fontSize: 18, fontWeight: 800, overflowWrap: 'anywhere' }}>{buildMemberCardIssueLabel(member.member_no)}</p>
+        </div>
+        <div>
+          <QrBlock qrUrl={qrUrl} size={196} />
+          <p style={{ margin: '9px 0 0', textAlign: 'center', fontSize: 13, fontWeight: 700 }}>Scan to verify membership</p>
+        </div>
+        <div>
+          <p style={{ ...labelStyle, fontSize: 10 }}>Verification URL</p>
+          <p style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.6, overflowWrap: 'anywhere' }}>{displayVerifyUrl(verifyUrl)}</p>
+        </div>
+        <div style={{ paddingTop: 14, borderTop: '1px solid #cadfe5' }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Jatt Alliance Sindh</p>
+          <p style={{ margin: '4px 0 0', color: TEAL, fontSize: 12 }}>Education · Health · Dignity</p>
+        </div>
+      </aside>
+    </div>
   )
 }
 
-function formatVerifyUrlForDisplay(value: string | null | undefined) {
-  if (!value) return ''
-
-  try {
-    const url = new URL(value)
-    return `${url.host}${url.pathname}`
-  } catch {
-    return value.replace(/^https?:\/\//, '')
-  }
-}
-
-function CardFooter({ children }: { children: ReactNode }) {
+function QrBlock({ qrUrl, size }: { qrUrl: string | null; size: number }) {
   return (
-    <footer className="shrink-0 border-t border-slate-200 bg-slate-100 px-8 py-2">
-      <p className="text-[12px] font-bold leading-5 text-slate-700">
-        {children}
-      </p>
-    </footer>
+    <div style={{ width: size + 28, height: size + 28, padding: 14, boxSizing: 'border-box', background: '#ffffff', marginInline: 'auto', flexShrink: 0 }}>
+      {qrUrl
+        ? <img src={qrUrl} alt="Membership verification QR code" draggable={false} style={{ width: size, height: size, maxWidth: 'none', objectFit: 'contain', display: 'block' }} />
+        : <div style={{ width: size, height: size, display: 'grid', placeItems: 'center', color: MUTED, fontSize: 13, textAlign: 'center', background: '#f4f7fb' }}>QR unavailable</div>}
+    </div>
   )
+}
+
+function Panel({ title, children }: { title: string; children: ReactNode }) {
+  return <section style={{ minWidth: 0, borderTop: `2px solid ${LINE}`, paddingTop: 10 }}><h3 style={{ ...labelStyle, color: TEAL }}>{title}</h3>{children}</section>
+}
+
+function Field({ label, value, small = false }: { label: string; value: string | null | undefined; small?: boolean }) {
+  const text = value?.trim() || 'Not provided'
+  return <div style={{ minWidth: 0 }}><p style={{ ...labelStyle, fontSize: small ? 10 : 12 }}>{label}</p><p style={{ ...boundedText, margin: '5px 0 0', fontSize: fitSize(text, small ? 15 : 21, small ? 12 : 15, small ? 24 : 25), fontWeight: 700, lineHeight: 1.35, overflowWrap: 'anywhere' }}>{text}</p></div>
+}
+
+function fitSize(value: string, preferred: number, minimum: number, threshold: number) {
+  return Math.max(minimum, preferred - Math.max(0, value.length - threshold) * .4)
+}
+
+function displayVerifyUrl(value: string) {
+  if (!value) return 'Verification link unavailable'
+  try { const url = new URL(value); return `${url.host}${url.pathname}${url.search}` }
+  catch { return value.replace(/^https?:\/\//, '') }
 }
 
 function formatDate(value: string | null | undefined) {
-  if (!value) return 'N/A'
-
+  if (!value) return 'Not provided'
   const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) return 'N/A'
-
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+  if (Number.isNaN(date.getTime())) return 'Not provided'
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
 
 function formatCnic(value: string | null | undefined) {
-  if (!value) return 'N/A'
-
+  if (!value) return 'Not provided'
   const digits = value.replace(/\D/g, '')
-
-  if (digits.length === 13) {
-    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`
-  }
-
-  return value
+  return digits.length === 13 ? `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}` : value
 }
 
 function formatMobile(value: string | null | undefined) {
-  if (!value) return 'N/A'
-
+  if (!value) return 'Not provided'
   const digits = value.replace(/\D/g, '')
-
-  if (digits.startsWith('92') && digits.length === 12) {
-    return `+${digits}`
-  }
-
-  if (digits.startsWith('0') && digits.length === 11) {
-    return digits
-  }
-
-  if (digits.startsWith('3') && digits.length === 10) {
-    return `0${digits}`
-  }
-
-  return value
+  return digits.startsWith('92') && digits.length === 12 ? `+${digits}` : value
 }
