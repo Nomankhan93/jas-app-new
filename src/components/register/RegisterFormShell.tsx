@@ -1,26 +1,10 @@
+import { FreeMembershipNotice } from '../FreeMembershipNotice'
 import type { ReactNode } from 'react'
 import type { TranslationKey } from '../../lib/i18n'
-import {
-  MEMBERSHIP_BASE_FEE,
-  MEMBERSHIP_MANUAL_PAYMENT_DETAILS,
-  formatMembershipMoney,
-} from '../../lib/membership-fee'
 import type { FormField } from '../../lib/register.validation'
 
 export function MembershipFeeSummary({ t }: { t: (key: TranslationKey) => string }) {
-  return (
-    <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-left text-sm text-amber-950 shadow-sm">
-      <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">
-        {t('signup.fee.label')}
-      </p>
-      <p className="mt-2 text-base font-black text-amber-950">
-        {formatMembershipMoney(MEMBERSHIP_BASE_FEE)} + {t('signup.fee.processingCharges')}
-      </p>
-      <p className="mt-1 leading-6 text-amber-800">
-        {t('register.fee.payVia').replace('{bank}', MEMBERSHIP_MANUAL_PAYMENT_DETAILS.bankName)}
-      </p>
-    </div>
-  )
+  return <FreeMembershipNotice title={t('membership.freeTitle')} description={t('membership.freeDescription')} />
 }
 
 export function FormSection({

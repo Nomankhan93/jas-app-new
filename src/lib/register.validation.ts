@@ -1,5 +1,4 @@
 import type { TranslationKey } from './i18n'
-import type { MembershipPayment } from './membership-fee'
 import {
   isPakistaniMobile,
   normalizeMobile,
@@ -62,7 +61,7 @@ export type RegisterFormState = {
   declarationAccepted: boolean
 }
 
-export type FormField = keyof RegisterFormState | 'photo' | 'paymentReceipt'
+export type FormField = keyof RegisterFormState | 'photo'
 
 export type FieldErrors = Partial<Record<FormField, string>>
 
@@ -120,7 +119,7 @@ export const registerFormSteps: Array<{
     titleKey: 'register.step.submit.title',
     shortTitleKey: 'register.step.submit.short',
     descriptionKey: 'register.step.submit.desc',
-    fields: ['photo', 'paymentReceipt', 'declarationAccepted'],
+    fields: ['photo', 'declarationAccepted'],
   },
 ]
 
@@ -201,17 +200,11 @@ export function validateRegisterForm({
   form,
   photo,
   existingMember,
-  existingMembershipPayment,
-  paymentReceipt,
-  paymentReceiptLocked,
   t,
 }: {
   form: RegisterFormState
   photo: File | null
   existingMember: ExistingMember | null
-  existingMembershipPayment: MembershipPayment | null
-  paymentReceipt: File | null
-  paymentReceiptLocked: boolean
   t: (key: TranslationKey) => string
 }) {
   const errors: FieldErrors = {}
@@ -296,14 +289,6 @@ export function validateRegisterForm({
 
   if (!photo && !existingMember?.photo_url) {
     errors.photo = t('register.error.photoRequired')
-  }
-
-  if (
-    !paymentReceiptLocked &&
-    !paymentReceipt &&
-    !existingMembershipPayment?.receipt_path
-  ) {
-    errors.paymentReceipt = t('register.error.receiptRequired')
   }
 
   if (!form.declarationAccepted) {

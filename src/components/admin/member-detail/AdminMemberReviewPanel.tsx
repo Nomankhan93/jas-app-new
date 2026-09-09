@@ -247,7 +247,7 @@ function ReviewChecklist({ member }: { member: Member }) {
             Approval verification checklist
           </p>
           <p className="mt-1 text-sm leading-6 text-emerald-900/75">
-            Review profile details, payment receipt and identity information
+            Review profile details, photo and identity information
             before approval.
           </p>
         </div>
@@ -295,8 +295,7 @@ function ReviewChecklist({ member }: { member: Member }) {
         <div className="flex items-start gap-3">
           <CreditCard className="mt-0.5 h-5 w-5 shrink-0" />
           <p>
-            Payment receipt/status should be confirmed from the membership
-            payment record before final approval.
+            Membership is free. No payment or receipt is required for approval.
           </p>
         </div>
       </div>

@@ -35,7 +35,7 @@ function validForm(): RegisterFormState {
   }
 }
 
-function validate(form: RegisterFormState, options?: { photo?: File | null; locked?: boolean }) {
+function validate(form: RegisterFormState, options?: { photo?: File | null }) {
   return validateRegisterForm({
     form,
     photo:
@@ -43,15 +43,12 @@ function validate(form: RegisterFormState, options?: { photo?: File | null; lock
         ? options.photo ?? null
         : new File(['photo'], 'photo.jpg', { type: 'image/jpeg' }),
     existingMember: null,
-    existingMembershipPayment: null,
-    paymentReceipt: null,
-    paymentReceiptLocked: options?.locked ?? true,
     t,
   })
 }
 
 describe('register validation', () => {
-  it('accepts a complete valid membership form', () => {
+  it('accepts a complete free membership form with no payment record or receipt', () => {
     expect(validate(validForm())).toEqual({})
   })
 
@@ -86,10 +83,16 @@ describe('register validation', () => {
     )
   })
 
-  it('requires photo and receipt only when they are not already available', () => {
-    const errors = validate(validForm(), { photo: null, locked: false })
+  it('requires a photo while accepting registration without a receipt', () => {
+    const errors = validate(validForm(), { photo: null })
     expect(errors.photo).toBe('register.error.photoRequired')
-    expect(errors.paymentReceipt).toBe('register.error.receiptRequired')
+    expect(errors).toEqual({ photo: 'register.error.photoRequired' })
+  })
+
+  it('still requires consent when membership is free', () => {
+    expect(validate({ ...validForm(), declarationAccepted: false })).toEqual({
+      declarationAccepted: 'register.error.declarationRequired',
+    })
   })
 
   it('maps database member values into the editable form shape', () => {

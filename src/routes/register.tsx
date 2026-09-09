@@ -5,7 +5,7 @@ import { RegisterAreaStep } from '../components/register/RegisterAreaStep'
 import { RegisterEmergencyStep } from '../components/register/RegisterEmergencyStep'
 import { MembershipFeeSummary } from '../components/register/RegisterFormShell'
 import { RegisterIdentityStep } from '../components/register/RegisterIdentityStep'
-import { RegisterPaymentStep } from '../components/register/RegisterPaymentStep'
+import { RegisterReviewStep } from '../components/register/RegisterPaymentStep'
 import { RegisterProfileStep } from '../components/register/RegisterProfileStep'
 import { useI18n } from '../lib/i18n'
 import {
@@ -28,14 +28,6 @@ import {
 } from '../lib/register.validation'
 import { supabase } from '../lib/supabase/client'
 import {
-  MEMBERSHIP_RECEIPT_ALLOWED_TYPES,
-  MEMBERSHIP_RECEIPT_BUCKET,
-  MEMBERSHIP_RECEIPT_MAX_SIZE_BYTES,
-  MEMBERSHIP_RECEIPT_MAX_SIZE_LABEL,
-  type MembershipPayment,
-  createPendingMembershipPaymentPayload,
-} from '../lib/membership-fee'
-import {
   normalizeMobile,
   optionalText,
 } from '../lib/shared/formatters'
@@ -53,9 +45,6 @@ function RegisterPage() {
   const [submitting, setSubmitting] = useState(false)
   const [userId, setUserId] = useState('')
   const [existingMember, setExistingMember] = useState<ExistingMember | null>(null)
-  const [existingMembershipPayment, setExistingMembershipPayment] =
-    useState<MembershipPayment | null>(null)
-
   const [form, setForm] = useState<RegisterFormState>(initialRegisterForm)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [currentStep, setCurrentStep] = useState(0)
@@ -63,7 +52,6 @@ function RegisterPage() {
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [existingPhotoSignedUrl, setExistingPhotoSignedUrl] = useState<string | null>(null)
-  const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null)
 
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -72,9 +60,6 @@ function RegisterPage() {
   const locked = existingMember?.status === 'approved'
   const isPendingEdit = existingMember?.status === 'pending'
   const isRejected = existingMember?.status === 'rejected'
-  const paymentReceiptLocked =
-    existingMembershipPayment?.status === 'paid' ||
-    existingMembershipPayment?.status === 'waived'
   const isLastStep = currentStep === registerFormSteps.length - 1
 
   const localizedSteps = useMemo(
@@ -164,15 +149,6 @@ function RegisterPage() {
     if (data) {
       setExistingMember(data)
       setForm(memberToRegisterForm(data))
-
-      const { data: paymentData } = await supabase
-        .from('membership_payments')
-        .select('*')
-        .eq('member_id', data.id)
-        .maybeSingle()
-        .returns<MembershipPayment | null>()
-
-      setExistingMembershipPayment(paymentData ?? null)
 
       if (data.photo_url) {
         const { data: signed } = await supabase.storage
@@ -274,62 +250,11 @@ function RegisterPage() {
     })
   }
 
-  function handlePaymentReceiptChange(event: ChangeEvent<HTMLInputElement>) {
-    setError('')
-    setSuccess('')
-
-    if (paymentReceiptLocked) {
-      setError(t('register.payment.receiptLocked'))
-      event.target.value = ''
-      return
-    }
-
-    const file = event.target.files?.[0] ?? null
-    setPaymentReceipt(null)
-
-    if (!file) return
-
-    if (!MEMBERSHIP_RECEIPT_ALLOWED_TYPES.includes(file.type)) {
-      setFieldErrors((current) => ({
-        ...current,
-        paymentReceipt: t('register.payment.receiptHint').replace(
-          '{size}',
-          MEMBERSHIP_RECEIPT_MAX_SIZE_LABEL,
-        ),
-      }))
-      event.target.value = ''
-      return
-    }
-
-    if (file.size > MEMBERSHIP_RECEIPT_MAX_SIZE_BYTES) {
-      setFieldErrors((current) => ({
-        ...current,
-        paymentReceipt: t('register.payment.receiptHint').replace(
-          '{size}',
-          MEMBERSHIP_RECEIPT_MAX_SIZE_LABEL,
-        ),
-      }))
-      event.target.value = ''
-      return
-    }
-
-    setPaymentReceipt(file)
-
-    setFieldErrors((current) => {
-      const next = { ...current }
-      delete next.paymentReceipt
-      return next
-    })
-  }
-
   function validateCurrentForm() {
     return validateRegisterForm({
       form,
       photo,
       existingMember,
-      existingMembershipPayment,
-      paymentReceipt,
-      paymentReceiptLocked,
       t,
     })
   }
@@ -485,40 +410,6 @@ function RegisterPage() {
       }
     }
 
-    let receiptPath = existingMembershipPayment?.receipt_path ?? null
-    let receiptFileName = existingMembershipPayment?.receipt_file_name ?? null
-    let receiptMimeType = existingMembershipPayment?.receipt_mime_type ?? null
-    let receiptSizeBytes = existingMembershipPayment?.receipt_size_bytes ?? null
-    let receiptUploadedAt = existingMembershipPayment?.receipt_uploaded_at ?? null
-
-    if (paymentReceipt && paymentReceiptLocked) {
-      setError(t('register.payment.receiptLocked'))
-      setSubmitting(false)
-      return
-    }
-
-    if (paymentReceipt) {
-      const extension = paymentReceipt.name.split('.').pop()?.toLowerCase() || 'jpg'
-      receiptPath = `${userId}/receipt-${Date.now()}.${extension}`
-      receiptFileName = paymentReceipt.name
-      receiptMimeType = paymentReceipt.type || 'application/octet-stream'
-      receiptSizeBytes = paymentReceipt.size
-      receiptUploadedAt = new Date().toISOString()
-
-      const { error: receiptUploadError } = await supabase.storage
-        .from(MEMBERSHIP_RECEIPT_BUCKET)
-        .upload(receiptPath, paymentReceipt, {
-          upsert: true,
-          contentType: receiptMimeType,
-        })
-
-      if (receiptUploadError) {
-        setError(receiptUploadError.message)
-        setSubmitting(false)
-        return
-      }
-    }
-
     const normalizedMobile = normalizeMobile(form.mobile)
     const normalizedEmergencyMobile = normalizeMobile(form.emergencyContactMobile)
 
@@ -543,8 +434,6 @@ function RegisterPage() {
       photo_url: photoPath,
     }
 
-    let savedMemberId = existingMember?.id ?? ''
-
     if (existingMember) {
       const updatePayload =
         existingMember.status === 'rejected'
@@ -566,7 +455,7 @@ function RegisterPage() {
         return
       }
     } else {
-      const { data: insertedMember, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('members')
         .insert({
           user_id: userId,
@@ -580,38 +469,6 @@ function RegisterPage() {
         setError(insertError.message)
         setSubmitting(false)
         return
-      }
-
-      savedMemberId = insertedMember.id
-    }
-
-    if (savedMemberId) {
-      const paymentAlreadyFinal =
-        existingMembershipPayment?.status === 'paid' ||
-        existingMembershipPayment?.status === 'waived'
-
-      if (!paymentAlreadyFinal) {
-        const paymentPayload = createPendingMembershipPaymentPayload(
-          savedMemberId,
-          userId,
-          {
-            receipt_path: receiptPath,
-            receipt_file_name: receiptFileName,
-            receipt_mime_type: receiptMimeType,
-            receipt_size_bytes: receiptSizeBytes,
-            receipt_uploaded_at: receiptUploadedAt,
-          },
-        )
-
-        const { error: paymentError } = await supabase
-          .from('membership_payments')
-          .upsert(paymentPayload, { onConflict: 'member_id' })
-
-        if (paymentError) {
-          setError(paymentError.message)
-          setSubmitting(false)
-          return
-        }
       }
     }
 
@@ -669,21 +526,17 @@ function RegisterPage() {
     }
 
     return (
-      <RegisterPaymentStep
+      <RegisterReviewStep
         title={currentStepData.title}
         description={currentStepData.description}
         form={form}
         fieldErrors={fieldErrors}
         locked={locked}
-        paymentReceiptLocked={paymentReceiptLocked}
         photo={photo}
         photoSrc={photoSrc}
-        paymentReceipt={paymentReceipt}
-        existingMembershipPayment={existingMembershipPayment}
         t={t}
         updateField={updateField}
         handlePhotoChange={handlePhotoChange}
-        handlePaymentReceiptChange={handlePaymentReceiptChange}
         getDescriptionIds={getDescriptionIds}
       />
     )

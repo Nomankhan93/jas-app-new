@@ -1,3 +1,4 @@
+import { FreeMembershipNotice } from '../../../components/FreeMembershipNotice';
 // src/routes/admin/members/$id.tsx
 import {
   Link,
@@ -29,19 +30,8 @@ import {
 import {
   approveMemberAction,
   rejectMemberAction,
-  saveMembershipReceiptAction,
   updateMemberApplicationAction,
-  updateMembershipPaymentStatusAction,
 } from "../../../lib/admin/actions";
-import {
-  MEMBERSHIP_RECEIPT_ALLOWED_TYPES,
-  MEMBERSHIP_RECEIPT_BUCKET,
-  MEMBERSHIP_RECEIPT_MAX_SIZE_BYTES,
-  MEMBERSHIP_RECEIPT_MAX_SIZE_LABEL,
-  type MembershipPayment,
-  type MembershipPaymentStatus,
-  getMembershipPaymentStatusLabel,
-} from "../../../lib/membership-fee";
 import { supabase } from "../../../lib/supabase/client";
 import {
   normalizeMobile,
@@ -57,7 +47,6 @@ import {
   type CommitteeRecord,
   type DesignationRecord,
 } from "../../../lib/committees";
-import { AdminMemberPaymentPanel } from "../../../components/admin/member-detail/AdminMemberPaymentPanel";
 import { AdminMemberProfilePanel } from "../../../components/admin/member-detail/AdminMemberProfilePanel";
 import { AdminMemberReviewPanel, StatusPanel } from "../../../components/admin/member-detail/AdminMemberReviewPanel";
 import { OfficeBearerIssuePanel } from "../../../components/admin/member-detail/OfficeBearerIssuePanel";
@@ -67,10 +56,8 @@ import {
   MEMBER_PHOTO_MAX_SIZE_BYTES,
   MIN_REJECTION_REASON_LENGTH,
   createSignedPhotoUrl,
-  createSignedReceiptUrl,
   ensureAdminAccess,
   fetchMemberById,
-  fetchMembershipPaymentWithReceiptUrl,
   fetchOfficeBearerAssignments,
   formatCnic,
   formatDate,
@@ -117,12 +104,6 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
 
   const [member, setMember] = useState<Member | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [membershipPayment, setMembershipPayment] =
-    useState<MembershipPayment | null>(null);
-  const [receiptSignedUrl, setReceiptSignedUrl] = useState<string | null>(null);
-  const [paymentAdminNote, setPaymentAdminNote] = useState("");
-  const [paymentActionLoading, setPaymentActionLoading] = useState(false);
-  const [paymentLoadError, setPaymentLoadError] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -133,7 +114,6 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
   const [editErrors, setEditErrors] = useState<AdminEditErrors>({});
   const [editPhoto, setEditPhoto] = useState<File | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
-  const [receiptUploading, setReceiptUploading] = useState(false);
   const [officeBearerAssignments, setOfficeBearerAssignments] = useState<
     AdminOfficeBearerAssignment[]
   >([]);
@@ -174,8 +154,6 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
         designation.scope === selectedOfficeBearerCommittee.committee_type),
   );
   const canEditApplication = Boolean(member);
-  const canEditPaymentReceipt =
-    member?.status === "pending" || member?.status === "rejected";
   const reasonTooShort =
     trimmedRejectionReason.length > 0 &&
     trimmedRejectionReason.length < MIN_REJECTION_REASON_LENGTH;
@@ -194,7 +172,6 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
       }
 
       setError("");
-      setPaymentLoadError("");
 
       try {
         const access = await ensureAdminAccess();
@@ -221,11 +198,7 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
           throw new Error(copy.memberNotFound);
         }
 
-        const [signedPhotoUrl, paymentResult] = await Promise.all([
-          createSignedPhotoUrl(safeMember.photo_url),
-          fetchMembershipPaymentWithReceiptUrl(safeMember.id),
-        ]);
-
+        const signedPhotoUrl = await createSignedPhotoUrl(safeMember.photo_url);
         if (cancelledRef?.current) return;
 
         setMember(safeMember);
@@ -240,10 +213,6 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
           setEditMode(false);
         }
         setPhotoUrl(signedPhotoUrl);
-        setMembershipPayment(paymentResult.payment);
-        setReceiptSignedUrl(paymentResult.receiptSignedUrl);
-        setPaymentAdminNote(paymentResult.payment?.admin_note ?? "");
-        setPaymentLoadError(paymentResult.errorMessage ?? "");
       } catch (err) {
         if (!cancelledRef?.current) {
           setError(
@@ -251,10 +220,6 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
           );
           setMember(null);
           setPhotoUrl(null);
-          setMembershipPayment(null);
-          setReceiptSignedUrl(null);
-          setPaymentAdminNote("");
-          setPaymentLoadError("");
           setCanManageOrganization(false);
         }
       } finally {
@@ -639,112 +604,6 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
     }
   }
 
-  async function handlePaymentReceiptUpload(file: File) {
-    if (!member || receiptUploading) return;
-
-    const paymentFinal =
-      membershipPayment?.status === "paid" ||
-      membershipPayment?.status === "waived";
-
-    if (paymentFinal) {
-      setError(
-        "Paid or waived payment records are locked. Receipt changes are not allowed.",
-      );
-      return;
-    }
-
-    if (!canEditPaymentReceipt) {
-      setError(
-        "Receipt replacement is available only before approval. Use payment status controls for approved members.",
-      );
-      return;
-    }
-
-    if (!MEMBERSHIP_RECEIPT_ALLOWED_TYPES.includes(file.type)) {
-      setError(
-        `Receipt must be PNG, JPG, WebP or PDF and ${MEMBERSHIP_RECEIPT_MAX_SIZE_LABEL} or smaller.`,
-      );
-      return;
-    }
-
-    if (file.size > MEMBERSHIP_RECEIPT_MAX_SIZE_BYTES) {
-      setError(
-        `Receipt file must be ${MEMBERSHIP_RECEIPT_MAX_SIZE_LABEL} or smaller.`,
-      );
-      return;
-    }
-
-    if (
-      membershipPayment &&
-      membershipPayment.status !== "pending" &&
-      membershipPayment.status !== "failed"
-    ) {
-      setError(
-        "Only pending or failed payment records can receive replacement receipts.",
-      );
-      return;
-    }
-
-    setReceiptUploading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const receiptPath = `${member.user_id}/admin-receipt-${Date.now()}.${extension}`;
-      const receiptMimeType = file.type || "application/octet-stream";
-      const receiptUploadedAt = new Date().toISOString();
-
-      const { error: uploadError } = await supabase.storage
-        .from(MEMBERSHIP_RECEIPT_BUCKET)
-        .upload(receiptPath, file, {
-          upsert: true,
-          contentType: receiptMimeType,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const receiptPayload = {
-        receipt_path: receiptPath,
-        receipt_file_name: file.name,
-        receipt_mime_type: receiptMimeType,
-        receipt_size_bytes: file.size,
-        receipt_uploaded_at: receiptUploadedAt,
-      };
-
-      const accessToken = await getAccessToken();
-      const receiptResult = (await saveMembershipReceiptAction({
-        data: {
-          memberId: member.id,
-          paymentId: membershipPayment?.id ?? null,
-          accessToken,
-          receipt: receiptPayload,
-        },
-      })) as { payment: MembershipPayment };
-
-      const savedPayment = receiptResult.payment;
-
-      const signedReceiptUrl = await createSignedReceiptUrl(
-        savedPayment.receipt_path,
-      );
-      setMembershipPayment(savedPayment);
-      setReceiptSignedUrl(signedReceiptUrl);
-      setPaymentAdminNote(savedPayment.admin_note ?? "");
-      setPaymentLoadError(
-        savedPayment.receipt_path && !signedReceiptUrl
-          ? "Receipt file not available."
-          : "",
-      );
-      setSuccess("Payment receipt updated successfully.");
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to upload receipt.",
-      );
-    } finally {
-      setReceiptUploading(false);
-    }
-  }
-
   async function handleApprove() {
     if (!member || actionLoading) return;
 
@@ -819,62 +678,11 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
     }
   }
 
-  async function handlePaymentStatusUpdate(status: MembershipPaymentStatus) {
-    if (!member || !membershipPayment || paymentActionLoading) return;
-
-    const confirmed = window.confirm(
-      `Update membership fee status to ${getMembershipPaymentStatusLabel(status)}?`,
-    );
-
-    if (!confirmed) return;
-
-    setPaymentActionLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const accessToken = await getAccessToken();
-      const result = (await updateMembershipPaymentStatusAction({
-        data: {
-          memberId: member.id,
-          paymentId: membershipPayment.id,
-          accessToken,
-          status,
-          adminNote: paymentAdminNote.trim() || null,
-        },
-      })) as { payment: MembershipPayment };
-      const nextPayment = result.payment;
-      const signedReceiptUrl = await createSignedReceiptUrl(
-        nextPayment.receipt_path,
-      );
-
-      setMembershipPayment(nextPayment);
-      setReceiptSignedUrl(signedReceiptUrl);
-      setPaymentAdminNote(nextPayment.admin_note ?? "");
-      setPaymentLoadError(
-        nextPayment.receipt_path && !signedReceiptUrl
-          ? "Receipt file not available."
-          : "",
-      );
-      setSuccess(
-        `Membership fee marked as ${getMembershipPaymentStatusLabel(status)}.`,
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update membership fee status.",
-      );
-    } finally {
-      setPaymentActionLoading(false);
-    }
-  }
-
   if (loading) {
     return (
       <AdminShell
         title="Member Detail"
-        subtitle="Review membership application, payment receipt, profile data and digital card status."
+        subtitle="Review free membership application, profile data and digital card status."
       >
         <div className="admin-nested-page">
           <div className="page-wrap rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
@@ -892,7 +700,7 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
     return (
       <AdminShell
         title="Member Detail"
-        subtitle="Review membership application, payment receipt, profile data and digital card status."
+        subtitle="Review free membership application, profile data and digital card status."
       >
         <div className="admin-nested-page">
           <div className="page-wrap space-y-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
@@ -920,7 +728,7 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
   return (
     <AdminShell
       title="Member Detail"
-      subtitle="Review membership application, payment receipt, profile data and digital card status."
+      subtitle="Review free membership application, profile data and digital card status."
     >
       <div className="admin-nested-page">
         <div className="page-wrap space-y-6">
@@ -1066,18 +874,7 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
 
           <StatusPanel member={member} />
 
-          <AdminMemberPaymentPanel
-            payment={membershipPayment}
-            receiptSignedUrl={receiptSignedUrl}
-            loadError={paymentLoadError}
-            adminNote={paymentAdminNote}
-            onAdminNoteChange={setPaymentAdminNote}
-            onStatusUpdate={handlePaymentStatusUpdate}
-            onReceiptUpload={handlePaymentReceiptUpload}
-            actionLoading={paymentActionLoading}
-            receiptUploading={receiptUploading}
-            canEditReceipt={canEditPaymentReceipt}
-          />
+          <FreeMembershipNotice />
 
           <AdminMemberProfilePanel
             copy={copy}

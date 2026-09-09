@@ -1,3 +1,4 @@
+import { FreeMembershipNotice } from '../components/FreeMembershipNotice'
 // src/routes/dashboard.tsx
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
@@ -28,19 +29,6 @@ import {
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { formatDonationMoney, getDonationPurposeLabel } from '../lib/donations'
 import { useI18n, type TranslationKey } from '../lib/i18n'
-import {
-  MEMBERSHIP_BASE_FEE,
-  MEMBERSHIP_MANUAL_PAYMENT_DETAILS,
-  MEMBERSHIP_PAYMENT_COMING_SOON_TEXT,
-  MEMBERSHIP_PAYMENT_QR_IMAGE_PATH,
-  type MembershipPayment,
-  formatMembershipMoney,
-  getMembershipFeeSubtext,
-  getMembershipPaymentQrHelpText,
-  getMembershipPaymentDisplayStatus,
-  getMembershipPaymentStatusClass,
-  getMembershipPaymentStatusLabel,
-} from '../lib/membership-fee'
 import {
   getNotificationTone,
   getProgramApplyPath,
@@ -126,7 +114,6 @@ type DashboardData = {
   donations: FinanceDonation[]
   donorRank: number | null
   notifications: UserNotification[]
-  membershipPayment: MembershipPayment | null
 }
 
 const programOrder = ['education', 'health', 'welfare', 'employment']
@@ -175,7 +162,6 @@ function DashboardPage() {
     donations: [],
     donorRank: null,
     notifications: [],
-    membershipPayment: null,
   })
 
   useEffect(() => {
@@ -243,16 +229,12 @@ function DashboardPage() {
       return
     }
 
-    const [membershipPayment, photoSignedUrl] = await Promise.all([
-      loadMembershipPayment(memberData?.id),
-      loadMemberPhoto(memberData?.photo_url),
-    ])
+    const photoSignedUrl = await loadMemberPhoto(memberData?.photo_url)
 
     setData((current) => ({
       ...current,
       member: memberData,
       photoSignedUrl,
-      membershipPayment,
       applications: silent ? current.applications : [],
       donations: silent ? current.donations : [],
       notifications: silent ? current.notifications : [],
@@ -287,10 +269,6 @@ function DashboardPage() {
   }
 
   const member = data.member
-  const membershipPaymentStatus = getMembershipPaymentDisplayStatus(
-    data.membershipPayment,
-  )
-
   const summaries = useMemo(() => {
     const byProgram = programOrder.map((programKey) => {
       const items = data.applications.filter(
@@ -354,12 +332,7 @@ function DashboardPage() {
           <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-700">
             {t('dashboard.noMember.description')}
           </p>
-          <div className="mt-5 max-w-2xl rounded-2xl border border-amber-200 bg-white/70 p-4 text-sm leading-6 text-amber-900">
-            <p className="font-black">
-              Membership Application Fee: {formatMembershipMoney(MEMBERSHIP_BASE_FEE)} + applicable tax/processing charges.
-            </p>
-            <p className="mt-1 text-amber-800">{getMembershipFeeSubtext()}</p>
-          </div>
+          <FreeMembershipNotice />
           <Link to="/register" className="primary-btn mt-6">
             {t('dashboard.noMember.cta')}
           </Link>
@@ -458,8 +431,8 @@ function DashboardPage() {
               tone="emerald"
             />
             <OverviewCard
-              label={t('dashboard.feeStatus')}
-              value={getMembershipPaymentStatusLabel(membershipPaymentStatus)}
+              label={t('signup.fee.label')}
+              value={t('membership.freeLabel')}
               icon={<CreditCard className="h-5 w-5" />}
               tone="amber"
             />
@@ -576,7 +549,7 @@ function DashboardPage() {
 
           <aside className="dashboard-sidebar space-y-5">
             <QuickActions member={member} />
-            <MembershipFeePanel payment={data.membershipPayment} />
+            <FreeMembershipNotice />
             <DonationPanel
               totalDonated={summaries.totalDonated}
               donationCount={summaries.donationCount}
@@ -723,86 +696,6 @@ function ProgramSummaryCard({
   )
 }
 
-
-function MembershipFeePanel({ payment }: { payment: MembershipPayment | null }) {
-  const { t } = useI18n()
-  const status = getMembershipPaymentDisplayStatus(payment)
-
-  return (
-    <section className="dashboard-fee-panel rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
-      <div className="dashboard-fee-header flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">
-            {t('dashboard.membershipFee')}
-          </p>
-          <h2 className="mt-2 text-xl font-black text-slate-950">
-            {formatMembershipMoney(payment?.total_amount ?? MEMBERSHIP_BASE_FEE)}
-          </h2>
-        </div>
-        <span
-          className={`rounded-full border px-3 py-1 text-xs font-black ${getMembershipPaymentStatusClass(
-            status,
-          )}`}
-        >
-          {getMembershipPaymentStatusLabel(status)}
-        </span>
-      </div>
-
-      <div className="dashboard-fee-body mt-4 grid gap-4">
-        <div className="dashboard-fee-details grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-1">
-          <InfoBox
-            label={t('dashboard.baseFee')}
-            value={formatMembershipMoney(payment?.base_amount ?? MEMBERSHIP_BASE_FEE)}
-          />
-          <InfoBox
-            label={t('dashboard.taxCharges')}
-            value={payment ? formatMembershipMoney(payment.tax_amount) : t('dashboard.applicableAtPayment')}
-          />
-          <InfoBox
-            label={t('dashboard.paymentAccount')}
-            value={`${MEMBERSHIP_MANUAL_PAYMENT_DETAILS.bankName} · ${MEMBERSHIP_MANUAL_PAYMENT_DETAILS.accountNumber}`}
-          />
-          <InfoBox
-            label={t('dashboard.accountTitle')}
-            value={MEMBERSHIP_MANUAL_PAYMENT_DETAILS.accountTitle}
-          />
-          <InfoBox
-            label={t('dashboard.iban')}
-            value={MEMBERSHIP_MANUAL_PAYMENT_DETAILS.iban}
-          />
-          <InfoBox
-            label={t('dashboard.tillId')}
-            value={MEMBERSHIP_MANUAL_PAYMENT_DETAILS.tillId}
-          />
-          <InfoBox
-            label={t('dashboard.receipt')}
-            value={
-              payment?.receipt_path
-                ? payment.receipt_file_name || 'Uploaded for admin verification'
-                : MEMBERSHIP_PAYMENT_COMING_SOON_TEXT
-            }
-          />
-        </div>
-
-        <div className="dashboard-fee-qr overflow-hidden rounded-2xl border border-amber-200 bg-white p-3 text-center shadow-sm">
-          <img
-            src={MEMBERSHIP_PAYMENT_QR_IMAGE_PATH}
-            alt="Membership fee payment QR code"
-            className="mx-auto w-full max-w-[180px] rounded-xl object-contain"
-            loading="lazy"
-          />
-          <p className="mt-3 text-xs font-bold leading-5 text-slate-800">
-            {getMembershipPaymentQrHelpText()}
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-4 text-xs leading-5 text-amber-800">
-        {t('dashboard.receiptRequired')}
-      </p>
-    </section>
-  )
-}
 
 function QuickActions({ member }: { member: Member }) {
   const { t } = useI18n()
@@ -1061,24 +954,6 @@ async function loadNotifications(userId: string) {
   return data || []
 }
 
-
-async function loadMembershipPayment(memberId?: string | null) {
-  if (!memberId) return null
-
-  const { data, error } = await supabase
-    .from('membership_payments')
-    .select('*')
-    .eq('member_id', memberId)
-    .maybeSingle()
-    .returns<MembershipPayment | null>()
-
-  if (error) {
-    console.warn('Membership payment status could not be loaded:', error.message)
-    return null
-  }
-
-  return data
-}
 
 async function loadMemberPhoto(photoUrl?: string | null) {
   if (!photoUrl) return null

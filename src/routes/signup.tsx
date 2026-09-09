@@ -1,3 +1,4 @@
+import { FreeMembershipNotice } from '../components/FreeMembershipNotice'
 // src/routes/signup.tsx
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
@@ -21,11 +22,6 @@ import {
   normalizePakistanPhone,
 } from '../lib/auth-validation'
 import { supabase } from '../lib/supabase/client'
-import {
-  MEMBERSHIP_BASE_FEE,
-  formatMembershipMoney,
-} from '../lib/membership-fee'
-
 export const Route = createFileRoute('/signup')({
   component: SignupPage,
 })
@@ -261,17 +257,7 @@ function SignupPage() {
                   {t('signup.hero.description')}
                 </p>
 
-                <div className="mt-8 rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-4 shadow-sm animate-fade-up delay-4">
-                  <p className="text-[0.72rem] font-extrabold uppercase tracking-[0.18em] text-amber-700">
-                    {t('signup.fee.label')}
-                  </p>
-                  <p className="mt-2 text-lg font-black text-slate-950">
-                    {formatMembershipMoney(MEMBERSHIP_BASE_FEE)} + {t('signup.fee.processingCharges')}
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-amber-800">
-                    {t('signup.fee.subtext')}
-                  </p>
-                </div>
+                <FreeMembershipNotice />
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-3">
                   <FeaturePill

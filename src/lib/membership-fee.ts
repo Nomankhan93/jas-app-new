@@ -1,10 +1,10 @@
 // src/lib/membership-fee.ts
 
-export const MEMBERSHIP_BASE_FEE = 600
+export const MEMBERSHIP_BASE_FEE = 0
 export const MEMBERSHIP_FEE_CURRENCY = 'PKR'
 export const MEMBERSHIP_PROCESSING_LABEL = 'applicable tax/processing charges'
 export const MEMBERSHIP_PAYMENT_COMING_SOON_TEXT =
-  'Manual payment receipt verification pending.'
+  'Membership is free. No payment or receipt is required.'
 
 export const MEMBERSHIP_RECEIPT_BUCKET = 'membership-receipts'
 export const MEMBERSHIP_RECEIPT_MAX_SIZE_BYTES = 5 * 1024 * 1024
@@ -83,21 +83,19 @@ export function formatMembershipMoney(value: number | string | null | undefined)
 }
 
 export function getMembershipFeeNotice() {
-  return `Membership Application Fee: ${formatMembershipMoney(
-    MEMBERSHIP_BASE_FEE,
-  )} + ${MEMBERSHIP_PROCESSING_LABEL}.`
+  return 'Membership is free. No payment or receipt is required.'
 }
 
 export function getMembershipFeeSubtext() {
-  return 'Final payable amount will be shown before payment.'
+  return 'No application fee, tax or processing charges apply.'
 }
 
 export function getManualMembershipPaymentInstruction() {
-  return `Send the membership application fee to ${MEMBERSHIP_MANUAL_PAYMENT_DETAILS.bankName} account ${MEMBERSHIP_MANUAL_PAYMENT_DETAILS.accountNumber} or scan the provided QR code, then upload the payment receipt before submitting your application.`
+  return getMembershipFeeNotice()
 }
 
 export function getMembershipPaymentQrHelpText() {
-  return `You can pay through ${MEMBERSHIP_MANUAL_PAYMENT_DETAILS.paymentNetwork} by scanning the QR code or using Till ID ${MEMBERSHIP_MANUAL_PAYMENT_DETAILS.tillId}.`
+  return getMembershipFeeNotice()
 }
 
 export function getMembershipPaymentStatusLabel(
@@ -143,26 +141,8 @@ export function getMembershipPaymentDisplayStatus(
   return payment?.status ?? 'pending'
 }
 
-export function createPendingMembershipPaymentPayload(
-  memberId: string,
-  userId: string,
-  receipt?: MembershipPaymentReceiptPayload,
-) {
-  return {
-    member_id: memberId,
-    user_id: userId,
-    base_amount: MEMBERSHIP_BASE_FEE,
-    tax_amount: 0,
-    total_amount: MEMBERSHIP_BASE_FEE,
-    currency: MEMBERSHIP_FEE_CURRENCY,
-    status: 'pending' as const,
-    payment_method: 'bank' as const,
-    gateway_provider: 'manual_mobilink_microfinance_bank',
-    gateway_reference: null,
-    receipt_path: receipt?.receipt_path ?? null,
-    receipt_file_name: receipt?.receipt_file_name ?? null,
-    receipt_mime_type: receipt?.receipt_mime_type ?? null,
-    receipt_size_bytes: receipt?.receipt_size_bytes ?? null,
-    receipt_uploaded_at: receipt?.receipt_uploaded_at ?? null,
+export function assertMembershipPaymentCollectionEnabled() {
+  if (MEMBERSHIP_BASE_FEE === 0) {
+    throw new Error('Membership is free. Membership payments and receipts are disabled.')
   }
 }

@@ -1,3 +1,4 @@
+import { assertMembershipPaymentCollectionEnabled } from '../membership-fee';
 // src/lib/admin/actions.ts
 import { createServerFn } from "@tanstack/react-start";
 import { createSupabaseAdminClient } from "../supabase/admin";
@@ -412,6 +413,7 @@ export const saveMembershipReceiptAction = createServerFn({ method: "POST" })
   .inputValidator(validateReceiptInput)
   .handler(async ({ data }) => {
     try {
+      assertMembershipPaymentCollectionEnabled();
       const { supabaseAdmin, user } = await requireMembershipReviewer(
         data.accessToken,
       );
@@ -522,6 +524,7 @@ export const updateMembershipPaymentStatusAction = createServerFn({
   .inputValidator(validatePaymentStatusInput)
   .handler(async ({ data }) => {
     try {
+      assertMembershipPaymentCollectionEnabled();
       const { supabaseAdmin, user } = await requireMembershipReviewer(
         data.accessToken,
       );
