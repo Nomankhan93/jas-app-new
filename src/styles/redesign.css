@@ -152,3 +152,10 @@
 .brand-dot { background: #087f8c; box-shadow: none; animation: none; }
 html[lang='ur'], html[lang='sd'] { --font-body: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif; --font-display: var(--font-body); }
 .site-brand-link { border-radius: .875rem; }
+
+/* Full organization name and the home-page motto. */
+.welcome-brand { min-width: 0; }
+.welcome-brand img { flex-shrink: 0; }
+.welcome-brand strong { font-size: clamp(1.05rem, 2.3vw, 1.4rem); line-height: 1.35; letter-spacing: -.025em; }
+.welcome-intro > .welcome-tagline { margin-block: .75rem 1.25rem; color: #08717c; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 700; line-height: 1.6; }
+.welcome-page[dir='rtl'] .welcome-tagline { text-align: right; }

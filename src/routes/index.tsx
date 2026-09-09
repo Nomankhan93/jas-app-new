@@ -54,7 +54,7 @@ function HomePage() {
       <header className="welcome-header">
         <Link to="/" className="welcome-brand" aria-label="Jatt Alliance Sindh">
           <img src="/jas/logo.jpeg" width="52" height="52" alt="" />
-          <span><strong>JAS</strong><small>Jatt Alliance Sindh</small></span>
+          <span><strong>Jatt Alliance Sindh</strong></span>
         </Link>
         <LanguageSwitcher />
       </header>
@@ -62,6 +62,7 @@ function HomePage() {
         <section className="welcome-intro" aria-labelledby="welcome-heading">
           <span className="welcome-eyebrow"><ShieldCheck size={16} aria-hidden="true" />{text.welcome}</span>
           <h1 id="welcome-heading">{text.title}<span>{text.accent}</span></h1>
+          <p className="welcome-tagline" lang="en" dir="ltr">Education Health Dignity</p>
           <p>{text.description}</p>
           <div className="welcome-links">
             <Link to="/about">{text.about}<ArrowRight size={16} aria-hidden="true" /></Link>
