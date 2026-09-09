@@ -5,7 +5,8 @@ import { getMemberAccountItems, programItems, programTranslationKeys, publicPage
 import { useAuthRole } from '../../hooks/useAuthRole'
 import { APP_LANGUAGES, useI18n, type TranslationKey } from '../../lib/i18n'
 import { journeyCopy } from '../../lib/member-journey'
-import { supabase } from '../../lib/supabase/client'
+import { useHeaderData } from '../../hooks/useHeaderData'
+import { headerDataCopy } from '../../lib/header-data-copy'
 
 type OpenMenu = 'programs' | 'organization' | 'language' | 'account' | null
 const copy = {
@@ -23,13 +24,13 @@ export function Header({ compact: _compact }: { compact: boolean }) {
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [unread, setUnread] = useState({ userId: '', count: 0 })
-  const [profile, setProfile] = useState<{ userId: string; name: string; memberNo: string | null; status: string } | null>(null)
+  const headerData = useHeaderData(isLoggedIn ? accountUserId : '')
+  const dataText = headerDataCopy[language]
   const headerRef = useRef<HTMLElement>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
-  const unreadCount = isLoggedIn && unread.userId === accountUserId ? unread.count : 0
-  const currentProfile = isLoggedIn && profile?.userId === accountUserId ? profile : null
+  const unreadCount = headerData.count
+  const currentProfile = headerData.profile
   const dashboardPath = isAdmin ? '/admin' : '/dashboard'
   const dashboardLabel = isAdmin ? t('nav.adminPanel') : t('nav.dashboard')
   const active = (path: string) => path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`)
@@ -73,32 +74,6 @@ export function Header({ compact: _compact }: { compact: boolean }) {
     document.body.style.overflow = 'hidden'
     return () => { dialog.close(); document.body.style.overflow = previous }
   }, [drawerOpen])
-  useEffect(() => {
-    let current = true
-    if (!isLoggedIn || !accountUserId) return
-    async function load() {
-      try {
-        const { data, error } = await supabase.from('members').select('full_name, member_no, status').eq('user_id', accountUserId).maybeSingle()
-        if (current && !error) setProfile(data ? { userId: accountUserId, name: data.full_name, memberNo: data.member_no, status: data.status } : null)
-      } catch { /* Profile information is optional; navigation remains available. */ }
-    }
-    void load()
-    return () => { current = false }
-  }, [isLoggedIn, accountUserId, pathname])
-  useEffect(() => {
-    let current = true
-    if (!isLoggedIn || !accountUserId) return
-    async function refresh() {
-      try {
-        const { count, error } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', accountUserId).eq('is_read', false)
-        if (current) setUnread({ userId: accountUserId, count: error ? 0 : count ?? 0 })
-      } catch { if (current) setUnread({ userId: accountUserId, count: 0 }) }
-    }
-    void refresh()
-    window.addEventListener('focus', refresh)
-    window.addEventListener('jas-notifications-updated', refresh)
-    return () => { current = false; window.removeEventListener('focus', refresh); window.removeEventListener('jas-notifications-updated', refresh) }
-  }, [isLoggedIn, accountUserId, pathname])
 
   const programs = useMemo(() => programItems.map((item) => ({ ...item, label: t(`program.${programTranslationKeys[item.to]}.label` as TranslationKey), description: t(`program.${programTranslationKeys[item.to]}.description` as TranslationKey) })), [t])
   const pages = useMemo(() => publicPageItems.map((item) => ({ ...item, label: t(`public.${publicPageTranslationKeys[item.to]}.label` as TranslationKey), description: t(`public.${publicPageTranslationKeys[item.to]}.description` as TranslationKey) })), [t])
@@ -108,7 +83,7 @@ export function Header({ compact: _compact }: { compact: boolean }) {
     { title: text.community, items: pages.filter((item) => ['/gallery', '/events', '/contact'].includes(item.to)) },
   ]
   const memberItems = getMemberAccountItems({ dashboard: t('nav.dashboard'), digitalCard: t('nav.digitalCard'), updates: t('nav.updates'), donors: t('nav.donors'), register: t('nav.register') }, unreadCount)
-  const journeyItems = memberItems.filter((item) => item.to !== '/card' || currentProfile?.status === 'approved').filter((item) => item.to !== '/register' || currentProfile?.status !== 'approved').map((item) => item.to === '/register' ? { ...item, label: currentProfile?.status === 'pending' ? journeyCopy[language].view : currentProfile?.status === 'rejected' ? journeyCopy[language].revise : currentProfile ? item.label : journeyCopy[language].apply } : item)
+  const journeyItems = memberItems.filter((item) => !['/register', '/card'].includes(item.to) || (headerData.profileReady && !headerData.profileError)).filter((item) => item.to !== '/card' || currentProfile?.status === 'approved').filter((item) => item.to !== '/register' || currentProfile?.status !== 'approved').map((item) => item.to === '/register' ? { ...item, label: currentProfile?.status === 'pending' ? journeyCopy[language].view : currentProfile?.status === 'rejected' ? journeyCopy[language].revise : currentProfile ? item.label : journeyCopy[language].apply } : item)
   const accountItems: NavItem[] = isAdmin ? [{ to: '/admin', label: t('nav.adminPanel'), icon: <ShieldCheck size={17} /> }, ...journeyItems.filter((item) => item.to !== '/dashboard')] : journeyItems
   const chooseLanguage = (next: typeof language) => { setLanguage(next); setOpenMenu(null); if (!drawerOpen) triggerRef.current?.focus() }
   async function handleLogout() { if (await logout()) { close(); await navigate({ to: '/login', replace: true }) } }
@@ -126,7 +101,7 @@ export function Header({ compact: _compact }: { compact: boolean }) {
     return <Link key={item.to} to={item.to} onClick={close} className={`jas-menu-link${active(item.to) ? ' is-active' : ''}`} aria-current={active(item.to) ? 'page' : undefined}><span className="jas-menu-icon" aria-hidden="true">{item.icon}</span><span className="jas-menu-copy"><strong>{item.label}</strong>{item.description ? <small title={item.description}>{item.description}</small> : null}</span>{Boolean(item.badgeCount) && <span className="jas-count">{item.badgeCount! > 99 ? '99+' : item.badgeCount}</span>}</Link>
   }
   function identity() {
-    return <div className="jas-profile-summary"><strong>{currentProfile?.name || accountEmail || text.account}</strong>{currentProfile?.memberNo ? <span aria-label={text.memberNo}>{currentProfile.memberNo}</span> : null}<small>{isAdmin ? t('nav.adminPanel') : text.member}</small></div>
+    return <div className="jas-profile-summary">{!headerData.profileReady && !headerData.profileError ? <small role="status">{dataText.loading}</small> : null}{headerData.profileError || headerData.countError ? <div role="status"><small>{headerData.profileError ? dataText.profileError : dataText.countError}</small><button type="button" className="jas-language-option" onClick={headerData.retry}>{dataText.retry}</button></div> : null}<strong>{currentProfile?.name || accountEmail || text.account}</strong>{currentProfile?.memberNo ? <span aria-label={text.memberNo}>{currentProfile.memberNo}</span> : null}<small>{isAdmin ? t('nav.adminPanel') : text.member}</small></div>
   }
   function languageOptions() {
     return APP_LANGUAGES.map((option) => <button key={option.code} type="button" className="jas-language-option" lang={option.code} onClick={() => chooseLanguage(option.code)} aria-pressed={language === option.code}><span>{option.nativeLabel}</span>{language === option.code ? <Check size={16} aria-hidden="true" /> : null}</button>)

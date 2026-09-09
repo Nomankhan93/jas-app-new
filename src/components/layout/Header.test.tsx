@@ -13,7 +13,7 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 vi.mock('../../hooks/useAuthRole', () => ({ useAuthRole: () => ({ authLoading: false, logoutLoading: false, isLoggedIn: state.loggedIn, isAdmin: state.admin, accountInitial: 'N', accountEmail: 'noman@example.com', accountUserId: state.userId, logout: state.logout }) }))
 vi.mock('../../lib/supabase/client', () => ({ supabase: { from: () => {
-  const query = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: { full_name: 'Noman Khan', status: state.status, member_no: 'JAS-2026-0001' }, error: null }), then: (resolve: (value: unknown) => unknown) => Promise.resolve({ count: 3, error: null }).then(resolve) }
+  const query = { abortSignal: () => query, select: () => query, eq: () => query, maybeSingle: async () => ({ data: { full_name: 'Noman Khan', status: state.status, member_no: 'JAS-2026-0001' }, error: null }), then: (resolve: (value: unknown) => unknown) => Promise.resolve({ count: 3, error: null }).then(resolve) }
   return query
 } } }))
 function mount() { return render(<I18nProvider><Header compact={false} /></I18nProvider>) }

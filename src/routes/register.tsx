@@ -502,6 +502,7 @@ function RegisterPage() {
       }
     }
 
+    window.dispatchEvent(new CustomEvent('jas-membership-updated'))
     submitted.current = true
     setAutoSave(false)
     try { localStorage.removeItem(registerDraftKey(userId)) } catch { /* Submission succeeded; storage cleanup must not mask it. */ }
