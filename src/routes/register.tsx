@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { createFileRoute, useBlocker, useNavigate } from '@tanstack/react-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { RegisterAreaStep } from '../components/register/RegisterAreaStep'
 import { RegisterEmergencyStep } from '../components/register/RegisterEmergencyStep'
@@ -31,6 +31,7 @@ import {
   normalizeMobile,
   optionalText,
 } from '../lib/shared/formatters'
+import { journeyCopy } from '../lib/member-journey'
 import './register.css'
 
 export const Route = createFileRoute('/register')({
@@ -39,7 +40,7 @@ export const Route = createFileRoute('/register')({
 
 function RegisterPage() {
   const navigate = useNavigate()
-  const { t, direction } = useI18n()
+  const { t, direction, language } = useI18n()
 
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -55,12 +56,35 @@ function RegisterPage() {
 
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const copy = journeyCopy[language]
+  const [autoSave, setAutoSave] = useState(false)
+  const [savedForm, setSavedForm] = useState(JSON.stringify(initialRegisterForm))
+  const submitted = useRef(false)
   const [draftSavedAt, setDraftSavedAt] = useState('')
 
   const locked = existingMember?.status === 'approved'
   const isPendingEdit = existingMember?.status === 'pending'
   const isRejected = existingMember?.status === 'rejected'
   const isLastStep = currentStep === registerFormSteps.length - 1
+
+  const serializedForm = JSON.stringify(form)
+  const dirty = !loading && !locked && !submitted.current && (serializedForm !== savedForm || Boolean(photo))
+  useBlocker({
+    shouldBlockFn: () => dirty && !window.confirm(copy.leave),
+    enableBeforeUnload: dirty,
+  })
+  useEffect(() => {
+    if (!autoSave || loading || submitting || existingMember || !userId || submitted.current || serializedForm === savedForm) return
+    const timer = setTimeout(() => {
+      try {
+        const savedAt = new Date().toISOString()
+        localStorage.setItem(registerDraftKey(userId), JSON.stringify({ version: REGISTER_DRAFT_VERSION, savedAt, form: JSON.parse(serializedForm) }))
+        setDraftSavedAt(savedAt)
+        setSavedForm(serializedForm)
+      } catch { setAutoSave(false); setError(t('register.draftSaveFailed')) }
+    }, 1200)
+    return () => clearTimeout(timer)
+  }, [autoSave, loading, submitting, existingMember, userId, serializedForm, savedForm, t])
 
   const localizedSteps = useMemo(
     () =>
@@ -149,6 +173,7 @@ function RegisterPage() {
     if (data) {
       setExistingMember(data)
       setForm(memberToRegisterForm(data))
+      setSavedForm(JSON.stringify(memberToRegisterForm(data)))
 
       if (data.photo_url) {
         const { data: signed } = await supabase.storage
@@ -162,6 +187,7 @@ function RegisterPage() {
 
       if (draft) {
         setForm({ ...initialRegisterForm, ...draft.form })
+        setSavedForm(JSON.stringify({ ...initialRegisterForm, ...draft.form }))
         setDraftSavedAt(draft.savedAt)
       }
     }
@@ -324,7 +350,8 @@ function RegisterPage() {
   }
 
   function saveDraft() {
-    if (!userId || locked) return
+    if (!userId || locked || existingMember) return
+    if (!autoSave && !window.confirm(copy.storage)) return
 
     try {
       const savedAt = new Date().toISOString()
@@ -339,6 +366,7 @@ function RegisterPage() {
       )
 
       setDraftSavedAt(savedAt)
+      setSavedForm(JSON.stringify(form))
       setSuccess(t('register.draftSaved'))
       setError('')
     } catch {
@@ -349,7 +377,9 @@ function RegisterPage() {
   function clearDraft() {
     if (!userId) return
 
-    localStorage.removeItem(registerDraftKey(userId))
+    try { localStorage.removeItem(registerDraftKey(userId)) } catch { setError(t('register.draftSaveFailed')); return }
+    setAutoSave(false)
+    setSavedForm(JSON.stringify(initialRegisterForm))
     setDraftSavedAt('')
     setSuccess(t('register.draftCleared'))
     setError('')
@@ -472,7 +502,9 @@ function RegisterPage() {
       }
     }
 
-    localStorage.removeItem(registerDraftKey(userId))
+    submitted.current = true
+    setAutoSave(false)
+    try { localStorage.removeItem(registerDraftKey(userId)) } catch { /* Submission succeeded; storage cleanup must not mask it. */ }
     setDraftSavedAt('')
     setSubmitting(false)
 
@@ -647,11 +679,16 @@ function RegisterPage() {
             </div>
           ) : null}
 
-          {draftSavedAt && !existingMember ? (
-            <div className="reg-banner reg-banner--info">
-              <span className="reg-banner-icon">i</span>
-              {t('register.draftAvailable')}
-            </div>
+          {!existingMember && !locked ? (
+            <section className="reg-banner reg-banner--info" style={{ display: 'block' }}>
+              <label style={{ display: 'flex', gap: '.6rem', alignItems: 'center' }}>
+                <input type="checkbox" checked={autoSave} onChange={(event) => setAutoSave(event.target.checked)} />
+                {copy.autoSave}
+              </label>
+              <p>{copy.storage}</p>
+              <p>{copy.photo}</p>
+              {draftSavedAt ? <p role="status">{copy.lastSaved} {new Date(draftSavedAt).toLocaleString(language)} · {copy.expiry}</p> : null}
+            </section>
           ) : null}
 
           {error ? (
@@ -691,7 +728,7 @@ function RegisterPage() {
                   </button>
                 )}
 
-                {!locked ? (
+                {!locked && !existingMember ? (
                   <button type="button" onClick={saveDraft} className="reg-btn-soft">
                     {t('register.saveDraft')}
                   </button>

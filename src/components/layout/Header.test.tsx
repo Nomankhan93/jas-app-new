@@ -5,7 +5,7 @@ import type { AnchorHTMLAttributes } from 'react'
 import { Header } from './Header'
 import { I18nProvider } from '../../lib/i18n'
 
-const state = vi.hoisted(() => ({ loggedIn: false, admin: false, userId: 'user-1', navigate: vi.fn(), logout: vi.fn(async () => true) }))
+const state = vi.hoisted(() => ({ loggedIn: false, admin: false, userId: 'user-1', status: 'approved', navigate: vi.fn(), logout: vi.fn(async () => true) }))
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ to, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) => <a href={to} {...props} />,
   useNavigate: () => state.navigate,
@@ -13,12 +13,12 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 vi.mock('../../hooks/useAuthRole', () => ({ useAuthRole: () => ({ authLoading: false, logoutLoading: false, isLoggedIn: state.loggedIn, isAdmin: state.admin, accountInitial: 'N', accountEmail: 'noman@example.com', accountUserId: state.userId, logout: state.logout }) }))
 vi.mock('../../lib/supabase/client', () => ({ supabase: { from: () => {
-  const query = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: { full_name: 'Noman Khan', member_no: 'JAS-2026-0001' }, error: null }), then: (resolve: (value: unknown) => unknown) => Promise.resolve({ count: 3, error: null }).then(resolve) }
+  const query = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: { full_name: 'Noman Khan', status: state.status, member_no: 'JAS-2026-0001' }, error: null }), then: (resolve: (value: unknown) => unknown) => Promise.resolve({ count: 3, error: null }).then(resolve) }
   return query
 } } }))
 function mount() { return render(<I18nProvider><Header compact={false} /></I18nProvider>) }
 beforeEach(() => {
-  state.loggedIn = false; state.admin = false
+  state.loggedIn = false; state.admin = false; state.status = 'approved'
   localStorage.clear()
   Object.defineProperty(window, 'matchMedia', { configurable: true, value: () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() }) })
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
@@ -70,4 +70,18 @@ describe('institutional header', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
     await waitFor(() => expect(state.navigate).toHaveBeenCalledWith({ to: '/login', replace: true }))
   })
+  it.each(['pending', 'rejected', 'approved'])('shows the correct action for %s members', async (status) => {
+    state.loggedIn = true; state.status = status
+    mount()
+    fireEvent.click(document.querySelector('.jas-avatar')!)
+    await screen.findByText('Noman Khan')
+    if (status === 'approved') {
+      expect(screen.getByRole('link', { name: 'Digital Card' }).getAttribute('href')).toBe('/card')
+      expect(document.querySelector('#jas-nav-account a[href="/register"]')).toBeNull()
+    } else {
+      expect(screen.getByRole('link', { name: status === 'pending' ? 'View application' : 'Revise application' }).getAttribute('href')).toBe('/register')
+      expect(document.querySelector('#jas-nav-account a[href="/card"]')).toBeNull()
+    }
+  })
+
 })

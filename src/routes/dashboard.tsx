@@ -1,3 +1,4 @@
+import { journeyCopy } from '../lib/member-journey'
 import { FreeMembershipNotice } from '../components/FreeMembershipNotice'
 // src/routes/dashboard.tsx
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
@@ -698,7 +699,7 @@ function ProgramSummaryCard({
 
 
 function QuickActions({ member }: { member: Member }) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const canEditApplication =
     member.status === 'pending' || member.status === 'rejected'
 
@@ -732,7 +733,7 @@ function QuickActions({ member }: { member: Member }) {
 
             <Link to="/register" className="primary-btn w-full">
               <IdCard className="h-4 w-4" />
-              {t('dashboard.editApplication')}
+              {member.status === 'pending' ? journeyCopy[language].view : journeyCopy[language].revise}
             </Link>
           </>
         ) : (

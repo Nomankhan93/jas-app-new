@@ -4,6 +4,7 @@ import { Check, ChevronDown, Globe2, LogOut, Menu, ShieldCheck, Users, X } from 
 import { getMemberAccountItems, programItems, programTranslationKeys, publicPageItems, publicPageTranslationKeys, type NavItem } from '../../config/navigation'
 import { useAuthRole } from '../../hooks/useAuthRole'
 import { APP_LANGUAGES, useI18n, type TranslationKey } from '../../lib/i18n'
+import { journeyCopy } from '../../lib/member-journey'
 import { supabase } from '../../lib/supabase/client'
 
 type OpenMenu = 'programs' | 'organization' | 'language' | 'account' | null
@@ -23,7 +24,7 @@ export function Header({ compact: _compact }: { compact: boolean }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [unread, setUnread] = useState({ userId: '', count: 0 })
-  const [profile, setProfile] = useState<{ userId: string; name: string; memberNo: string | null } | null>(null)
+  const [profile, setProfile] = useState<{ userId: string; name: string; memberNo: string | null; status: string } | null>(null)
   const headerRef = useRef<HTMLElement>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
@@ -77,8 +78,8 @@ export function Header({ compact: _compact }: { compact: boolean }) {
     if (!isLoggedIn || !accountUserId) return
     async function load() {
       try {
-        const { data, error } = await supabase.from('members').select('full_name, member_no').eq('user_id', accountUserId).maybeSingle()
-        if (current && !error && data) setProfile({ userId: accountUserId, name: data.full_name, memberNo: data.member_no })
+        const { data, error } = await supabase.from('members').select('full_name, member_no, status').eq('user_id', accountUserId).maybeSingle()
+        if (current && !error) setProfile(data ? { userId: accountUserId, name: data.full_name, memberNo: data.member_no, status: data.status } : null)
       } catch { /* Profile information is optional; navigation remains available. */ }
     }
     void load()
@@ -107,7 +108,8 @@ export function Header({ compact: _compact }: { compact: boolean }) {
     { title: text.community, items: pages.filter((item) => ['/gallery', '/events', '/contact'].includes(item.to)) },
   ]
   const memberItems = getMemberAccountItems({ dashboard: t('nav.dashboard'), digitalCard: t('nav.digitalCard'), updates: t('nav.updates'), donors: t('nav.donors'), register: t('nav.register') }, unreadCount)
-  const accountItems: NavItem[] = isAdmin ? [{ to: '/admin', label: t('nav.adminPanel'), icon: <ShieldCheck size={17} /> }, ...memberItems.filter((item) => item.to !== '/dashboard')] : memberItems
+  const journeyItems = memberItems.filter((item) => item.to !== '/card' || currentProfile?.status === 'approved').filter((item) => item.to !== '/register' || currentProfile?.status !== 'approved').map((item) => item.to === '/register' ? { ...item, label: currentProfile?.status === 'pending' ? journeyCopy[language].view : currentProfile?.status === 'rejected' ? journeyCopy[language].revise : currentProfile ? item.label : journeyCopy[language].apply } : item)
+  const accountItems: NavItem[] = isAdmin ? [{ to: '/admin', label: t('nav.adminPanel'), icon: <ShieldCheck size={17} /> }, ...journeyItems.filter((item) => item.to !== '/dashboard')] : journeyItems
   const chooseLanguage = (next: typeof language) => { setLanguage(next); setOpenMenu(null); if (!drawerOpen) triggerRef.current?.focus() }
   async function handleLogout() { if (await logout()) { close(); await navigate({ to: '/login', replace: true }) } }
 

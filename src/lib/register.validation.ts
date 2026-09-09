@@ -160,13 +160,23 @@ export function readRegisterDraft(userId: string) {
       form?: Partial<RegisterFormState>
     }
 
-    if (parsed.version !== REGISTER_DRAFT_VERSION || !parsed.form) {
+    const savedTime = Date.parse(parsed.savedAt ?? '')
+    if (parsed.version !== REGISTER_DRAFT_VERSION || !parsed.form || typeof parsed.form !== 'object' || Array.isArray(parsed.form) ||
+        !Number.isFinite(savedTime) || savedTime > Date.now() ||
+        Date.now() - savedTime >= 7 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(registerDraftKey(userId))
       return null
+    }
+    const safeForm = { ...initialRegisterForm }
+    for (const key of Object.keys(initialRegisterForm) as Array<keyof RegisterFormState>) {
+      const value = parsed.form[key]
+      if (key === 'declarationAccepted') safeForm[key] = false
+      else if (typeof value === 'string') safeForm[key] = value
     }
 
     return {
       savedAt: parsed.savedAt ?? '',
-      form: parsed.form,
+      form: safeForm,
     }
   } catch {
     return null
