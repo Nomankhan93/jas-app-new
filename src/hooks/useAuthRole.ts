@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { adminRoleNames } from '../config/navigation'
 import { supabase } from '../lib/supabase/client'
 
@@ -8,6 +8,8 @@ type AuthUser = {
 }
 
 export function useAuthRole() {
+  const generation = useRef(0)
+  const mounted = useRef(false)
   const [authLoading, setAuthLoading] = useState(true)
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -33,52 +35,53 @@ export function useAuthRole() {
 
   const syncAuthState = useCallback(
     async (user?: AuthUser | null) => {
-      const userId = user?.id ?? null
-
-      setAccountUserId(userId ?? '')
+      const request = ++generation.current
+      const userId = user?.id ?? ''
+      setAuthLoading(true)
+      setIsAdmin(false)
+      setAccountUserId(userId)
       setIsLoggedIn(Boolean(userId))
       setAccountEmail(user?.email ?? '')
-
-      if (userId) setIsAdmin(await checkAdmin(userId))
-      else setIsAdmin(false)
-
-      setAuthLoading(false)
+      try {
+        const admin = userId ? await checkAdmin(userId) : false
+        if (mounted.current && generation.current === request) setIsAdmin(admin)
+      } catch (error) {
+        console.error('Role lookup failed:', error)
+      } finally {
+        if (mounted.current && generation.current === request) setAuthLoading(false)
+      }
     },
     [checkAdmin],
   )
 
   useEffect(() => {
-    let mounted = true
-
+    mounted.current = true
+    const initialGeneration = generation.current
     async function loadSession() {
-      const { data, error } = await supabase.auth.getSession()
-
-      if (!mounted) return
-
-      if (error) {
-        console.error('Session load failed:', error.message)
-        setIsLoggedIn(false)
-        setIsAdmin(false)
-        setAccountEmail('')
-        setAccountUserId('')
-        setAuthLoading(false)
-        return
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        if (!mounted.current || generation.current !== initialGeneration) return
+        if (error) throw error
+        await syncAuthState(data.session?.user ?? null)
+      } catch (error) {
+        if (!mounted.current || generation.current !== initialGeneration) return
+        console.error('Session load failed:', error)
+        await syncAuthState(null)
       }
-
-      await syncAuthState(data.session?.user ?? null)
     }
-
     void loadSession()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return
-      void syncAuthState(session?.user ?? null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Defer database calls until the auth callback has released its lock.
+      const eventGeneration = ++generation.current
+      setIsAdmin(false)
+      setAuthLoading(true)
+      setTimeout(() => {
+        if (mounted.current && generation.current === eventGeneration) void syncAuthState(session?.user ?? null)
+      }, 0)
     })
-
     return () => {
-      mounted = false
+      mounted.current = false
+      ++generation.current
       subscription.unsubscribe()
     }
   }, [syncAuthState])
@@ -90,14 +93,18 @@ export function useAuthRole() {
   async function logout() {
     setLogoutLoading(true)
 
-    const { error } = await supabase.auth.signOut()
-
-    if (error) {
-      console.error('Logout failed:', error.message)
-      setLogoutLoading(false)
+    ++generation.current
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+    } catch (error) {
+      console.error('Logout failed:', error)
+      if (mounted.current) { setLogoutLoading(false); setAuthLoading(false) }
       return false
     }
-
+    ++generation.current
+    if (!mounted.current) return true
+    setAuthLoading(false)
     setIsLoggedIn(false)
     setIsAdmin(false)
     setAccountEmail('')

@@ -214,6 +214,7 @@ async function fetchActiveMemberDesignation(
   memberId: string,
   supabaseAdmin: ReturnType<typeof createSupabaseAdminClient>,
 ) {
+  const today = new Date().toISOString().slice(0, 10)
   const { data, error } = await supabaseAdmin
     .from('organization_committee_members')
     .select(
@@ -223,11 +224,15 @@ async function fetchActiveMemberDesignation(
         'tenure_end',
         'sort_order',
         'created_at',
-        'committee:organization_committees(id, committee_type, name, division, district, taluka, status)',
+        'committee:organization_committees!inner(id, committee_type, name, division, district, taluka, status)',
       ].join(', '),
     )
     .eq('member_id', memberId)
     .eq('status', 'active')
+    .eq('committee.status', 'active')
+    .eq('committee.public_display', true)
+    .lte('tenure_start', today)
+    .gte('tenure_end', today)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false })
     .limit(5)

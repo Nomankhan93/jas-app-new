@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'jas-pwa'
-const CACHE_VERSION = 'v10-free-membership'
+const CACHE_VERSION = 'v11-user-controlled-updates'
 const CACHE_NAME = `${CACHE_PREFIX}-${CACHE_VERSION}`
 const CORE_ASSETS = [
   '/offline.html',
@@ -138,9 +138,7 @@ async function cacheFirstWithBackgroundRefresh(request, event) {
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    precacheCoreAssets()
-      .then(() => self.skipWaiting())
-      .catch(() => self.skipWaiting()),
+    precacheCoreAssets(),
   )
 })
 

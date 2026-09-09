@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase/client'
 import { deleteJasCacheStorage } from '../../lib/pwa-cache-reset'
 import {
@@ -43,7 +43,6 @@ function isStandaloneDisplay() {
 }
 
 const DEV_SW_RELOAD_FLAG = 'jas-pwa-dev-sw-unregistered'
-const AUTO_UPDATE_RELOAD_DELAY_MS = 3500
 
 async function unregisterDevServiceWorkers() {
   if (!('serviceWorker' in navigator)) return
@@ -78,6 +77,11 @@ export function PwaBootstrap() {
     useState<BeforeInstallPromptEvent | null>(null)
   const [canInstall, setCanInstall] = useState(false)
   const [isInstalling, setIsInstalling] = useState(false)
+  const updateRegistration = useRef<ServiceWorkerRegistration | null>(null)
+  const updateAccepted = useRef(false)
+  const updateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [updateDismissed, setUpdateDismissed] = useState(false)
+  const [updateError, setUpdateError] = useState('')
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [dismissedInstall, setDismissedInstall] = useState(false)
@@ -230,9 +234,10 @@ export function PwaBootstrap() {
     }
 
     let activeRegistration: ServiceWorkerRegistration | null = null
+    let hadController = Boolean(navigator.serviceWorker.controller)
     let refreshTriggered = false
-    let autoApplyTriggered = false
-    let reloadFallbackTimer: number | undefined
+    let disposed = false
+    const cleanups: Array<() => void> = []
 
     const reloadWithLatestController = () => {
       if (refreshTriggered) return
@@ -242,52 +247,31 @@ export function PwaBootstrap() {
       window.location.reload()
     }
 
-    const autoApplyUpdate = async (worker: ServiceWorker) => {
-      if (autoApplyTriggered) return
-
-      autoApplyTriggered = true
-      setUpdateAvailable(true)
-      setIsRefreshing(true)
-
-      try {
-        await deleteJasCacheStorage()
-      } catch (error) {
-        console.warn('JAS cache cleanup before app update failed:', error)
-      }
-
-      worker.postMessage({ type: 'SKIP_WAITING' })
-
-      reloadFallbackTimer = window.setTimeout(() => {
-        reloadWithLatestController()
-      }, AUTO_UPDATE_RELOAD_DELAY_MS)
-    }
-
+    const offerUpdate = () => { if (!disposed) setUpdateAvailable(true) }
     const watchRegistration = (registration: ServiceWorkerRegistration) => {
       activeRegistration = registration
-
-      if (registration.waiting && navigator.serviceWorker.controller) {
-        void autoApplyUpdate(registration.waiting)
+      updateRegistration.current = registration
+      if (registration.waiting && navigator.serviceWorker.controller) offerUpdate()
+      const watchInstalling = () => {
+        const worker = registration.installing
+        if (!worker) return
+        const changed = () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) offerUpdate()
+        }
+        worker.addEventListener('statechange', changed)
+        cleanups.push(() => worker.removeEventListener('statechange', changed))
+        changed()
       }
-
-      registration.addEventListener('updatefound', () => {
-        const installingWorker = registration.installing
-        if (!installingWorker) return
-
-        installingWorker.addEventListener('statechange', () => {
-          if (
-            installingWorker.state === 'installed' &&
-            navigator.serviceWorker.controller
-          ) {
-            void autoApplyUpdate(installingWorker)
-          }
-        })
-      })
+      registration.addEventListener('updatefound', watchInstalling)
+      cleanups.push(() => registration.removeEventListener('updatefound', watchInstalling))
+      watchInstalling()
     }
 
     const registerServiceWorker = () => {
       navigator.serviceWorker
         .register('/sw.js', { updateViaCache: 'none' })
         .then((registration) => {
+          if (disposed) return
           watchRegistration(registration)
           return registration.update()
         })
@@ -297,11 +281,10 @@ export function PwaBootstrap() {
     }
 
     const handleControllerChange = () => {
-      if (reloadFallbackTimer) {
-        window.clearTimeout(reloadFallbackTimer)
-      }
-
-      reloadWithLatestController()
+      if (!hadController) { hadController = true; return }
+      // Another tab may activate the update; this tab reloads only on consent.
+      if (updateAccepted.current) reloadWithLatestController()
+      else if (navigator.serviceWorker.controller) offerUpdate()
     }
 
     const checkForUpdates = () => {
@@ -337,12 +320,35 @@ export function PwaBootstrap() {
         'controllerchange',
         handleControllerChange,
       )
-      if (reloadFallbackTimer) {
-        window.clearTimeout(reloadFallbackTimer)
-      }
+      if (updateTimer.current) clearTimeout(updateTimer.current)
+      disposed = true
+      cleanups.forEach((cleanup) => cleanup())
+      updateRegistration.current = null
       window.clearInterval(updateInterval)
     }
   }, [])
+
+  async function handleUpdateClick() {
+    // Explicit confirmation protects unsaved registration/admin form changes.
+    if (!window.confirm('Update JAS now? Save any unfinished form first. This will reload the page.')) return
+    updateAccepted.current = true
+    setIsRefreshing(true)
+    setUpdateError('')
+    const worker = updateRegistration.current?.waiting
+    if (!worker) { window.location.reload(); return }
+    try {
+      worker.postMessage({ type: 'SKIP_WAITING' })
+      updateTimer.current = setTimeout(() => {
+        updateAccepted.current = false
+        setIsRefreshing(false)
+        setUpdateError('Update did not finish. Please try again when connected.')
+      }, 15000)
+    } catch {
+      updateAccepted.current = false
+      setIsRefreshing(false)
+      setUpdateError('Could not start the update. Please try again.')
+    }
+  }
 
   async function handleInstallClick() {
     if (!installPrompt) return
@@ -477,7 +483,7 @@ export function PwaBootstrap() {
     }
   }
 
-  const shouldShowUpdate = updateAvailable || isRefreshing
+  const shouldShowUpdate = (updateAvailable && !updateDismissed) || isRefreshing
   const shouldShowInstall =
     !shouldShowUpdate &&
     !dismissedInstall &&
@@ -510,12 +516,16 @@ export function PwaBootstrap() {
           </div>
           <div className="pwa-toast__body">
             <p className="pwa-toast__eyebrow">JAS app update</p>
-            <h2 className="pwa-toast__title">Updating automatically</h2>
+            <h2 className="pwa-toast__title">{isRefreshing ? 'Updating…' : 'New version available'}</h2>
             <p className="pwa-toast__text">
-              A new version was detected. Old app cache is being cleared and the
-              latest JAS portal will reload once.
+              Save any unfinished work, then choose Update now. You can keep using this version by choosing Later.
             </p>
           </div>
+          <div className="pwa-toast__actions">
+            <button type="button" className="pwa-toast__button pwa-toast__button--primary" disabled={isRefreshing} onClick={() => void handleUpdateClick()}>{isRefreshing ? 'Updating…' : 'Update now'}</button>
+            <button type="button" className="pwa-toast__button pwa-toast__button--ghost" disabled={isRefreshing} onClick={() => setUpdateDismissed(true)}>Later</button>
+          </div>
+          {updateError ? <p role="alert">{updateError}</p> : null}
         </section>
       ) : null}
 
