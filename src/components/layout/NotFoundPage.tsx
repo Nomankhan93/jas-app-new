@@ -7,7 +7,7 @@ export function NotFoundPage() {
   const { t } = useI18n()
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#fbf9f4_0%,#f6f2e9_55%,#f8f5ef_100%)] text-stone-950">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fbf9f4_0%,#f6f2e9_55%,#f8f5ef_100%)] text-slate-950">
       <Header compact />
 
       <main className="relative z-10 px-3 py-10 sm:px-4 sm:py-16">

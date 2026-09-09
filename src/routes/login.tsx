@@ -143,10 +143,10 @@ function LoginPage() {
 
   if (checkingSession) {
     return (
-      <main className="page-main">
+      <main className="page-main auth-page">
         <div className="page-wrap">
-          <div className="rounded-[2rem] border border-[#e8e0d1] bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3 text-sm font-bold text-stone-700">
+          <div className="rounded-[2rem] border border-[#dce4ee] bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
               <Loader2 className="h-5 w-5 animate-spin text-emerald-700" />
               {t('authPage.common.checkingSession')}
             </div>
@@ -157,7 +157,7 @@ function LoginPage() {
   }
 
   return (
-    <main className="page-main">
+    <main className="page-main auth-page">
       <div className="page-wrap page-stack" dir={direction}>
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
           <aside className="home-hero animate-fade-up">
@@ -208,10 +208,10 @@ function LoginPage() {
                 </div>
 
                 <div className="mt-8 rounded-[1.5rem] border border-white/60 bg-white/70 p-4 shadow-sm backdrop-blur animate-fade-up delay-4">
-                  <p className="text-[0.72rem] font-extrabold uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[0.72rem] font-extrabold uppercase tracking-[0.18em] text-slate-500">
                     {t('login.needAccount.label')}
                   </p>
-                  <p className="mt-2 text-sm leading-7 text-stone-600">
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
                     {t('login.needAccount.text')}
                   </p>
 
@@ -226,7 +226,7 @@ function LoginPage() {
             </div>
           </aside>
 
-          <section className="soft-panel animate-scale-in rounded-[2rem] border-[#e8e0d1] bg-white p-5 shadow-[0_24px_70px_rgba(20,18,16,0.08)] sm:p-7">
+          <section className="soft-panel animate-scale-in rounded-[2rem] border-[#dce4ee] bg-white p-5 shadow-[0_24px_70px_rgba(20,18,16,0.08)] sm:p-7">
             <div className="mb-6">
               <div className="badge-soft bg-[var(--gold-pale)] text-[var(--gold)]">
                 <Sparkles size={14} />
@@ -235,7 +235,7 @@ function LoginPage() {
 
               <h2 className="section-title mt-4">{t('login.form.title')}</h2>
 
-              <p className="mt-3 text-sm leading-7 text-stone-600">
+              <p className="mt-3 text-sm leading-7 text-slate-600">
                 {t('login.form.description')}
               </p>
             </div>
@@ -297,7 +297,7 @@ function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-lg p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+                      className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-lg p-2 text-slate-500 transition hover:bg-stone-100 hover:text-stone-900"
                       aria-label={showPassword ? t('authPage.common.hidePassword') : t('authPage.common.showPassword')}
                     >
                       {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -327,10 +327,10 @@ function LoginPage() {
             {method === 'phone' ? (
               <form onSubmit={handlePhoneLogin} className="space-y-4">
                 <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--paper)] p-4">
-                  <p className="text-[0.72rem] font-extrabold uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[0.72rem] font-extrabold uppercase tracking-[0.18em] text-slate-500">
                     {t('authPage.common.mobilePassword')}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-stone-900">
+                  <p className="mt-1 text-sm font-semibold text-slate-900">
                     {t('login.phone.step1Text')}
                   </p>
                 </div>
@@ -350,7 +350,7 @@ function LoginPage() {
                     className="input-clean"
                     placeholder="03341013222"
                   />
-                  <p className="mt-2 text-xs leading-5 text-stone-500">
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
                     {t('authPage.common.phoneHint')}
                   </p>
                 </FormField>
@@ -374,7 +374,7 @@ function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-lg p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+                      className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-lg p-2 text-slate-500 transition hover:bg-stone-100 hover:text-stone-900"
                       aria-label={showPassword ? t('authPage.common.hidePassword') : t('authPage.common.showPassword')}
                     >
                       {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -402,7 +402,7 @@ function LoginPage() {
               </form>
             ) : null}
 
-            <p className="mt-6 text-center text-sm text-stone-600">
+            <p className="mt-6 text-center text-sm text-slate-600">
               {t('login.noAccount')}{' '}
               <Link to="/signup" className="font-bold text-[var(--forest)]">
                 {t('login.needAccount.cta')}
@@ -456,7 +456,7 @@ function FormField({
     <div className="block">
       <label
         htmlFor={htmlFor}
-        className="mb-2 block text-sm font-semibold text-stone-700"
+        className="mb-2 block text-sm font-semibold text-slate-700"
       >
         {label}
       </label>
@@ -515,8 +515,8 @@ function FeaturePill({
       <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--gold-pale)] text-[var(--forest)]">
         {icon}
       </div>
-      <p className="text-sm font-bold text-stone-900">{title}</p>
-      <p className="mt-1 text-xs text-stone-500">{text}</p>
+      <p className="text-sm font-bold text-slate-900">{title}</p>
+      <p className="mt-1 text-xs text-slate-500">{text}</p>
     </div>
   )
 }

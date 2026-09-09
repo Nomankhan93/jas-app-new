@@ -50,6 +50,7 @@ import {
   getProgramStatusLabel,
   type UserNotification,
 } from '../lib/notifications'
+import { MemberNavigation } from '../components/layout/MemberNavigation'
 import { supabase } from '../lib/supabase/client'
 import {
   formatDisplayDate as formatDate,
@@ -370,6 +371,7 @@ function DashboardPage() {
   return (
     <main dir={direction} className="dashboard-page min-h-screen px-3 py-6 sm:px-4 sm:py-8 md:py-10">
       <div className="dashboard-wrap page-wrap space-y-6 sm:space-y-8">
+        <MemberNavigation />
         {error ? (
           <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
             <AlertCircle className="mt-0.5 h-5 w-5" />

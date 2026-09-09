@@ -62,7 +62,7 @@ function NewsPage() {
 
   return (
     <main className="page-wrap py-10 sm:py-14" dir="ltr">
-      <section className="overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#fffdf8,#f7f1e6_54%,#edf4ee)] p-6 shadow-sm ring-1 ring-slate-200/70 sm:p-8 lg:p-10">
+      <section className="overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#ffffff,#f7f1e6_54%,#eaf5f7)] p-6 shadow-sm ring-1 ring-slate-200/70 sm:p-8 lg:p-10">
         <div className={`max-w-3xl ${publicCopy.textAlignClass}`} dir={publicCopy.textDir}>
           <p className="section-eyebrow mb-3">{publicCopy.media.newsEyebrow}</p>
           <h1 className="section-title text-balance">{publicCopy.media.newsTitle}</h1>

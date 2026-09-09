@@ -1,5 +1,5 @@
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { ShieldCheck } from 'lucide-react'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   getLoggedOutAccountItems,
@@ -263,7 +263,7 @@ export function Header({ compact }: { compact: boolean }) {
             aria-label="Jatt Alliance Sindh home"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10">
-              <ShieldCheck size={18} className="text-[#d8a949]" aria-hidden="true" />
+              <img src="/jas/logo.jpeg" alt="" width="44" height="44" className="h-11 w-11 rounded-full bg-white object-cover" />
             </span>
             <span className="min-w-0">
               <span className="hidden truncate font-[Manrope,Inter,sans-serif] text-xl font-extrabold tracking-tight text-white sm:block sm:text-2xl">
@@ -348,7 +348,7 @@ export function Header({ compact }: { compact: boolean }) {
               </Link>
               <Link
                 to="/signup"
-                className="animate-fade-up inline-flex min-h-[2.75rem] items-center justify-center rounded-[var(--r-lg)] bg-[linear-gradient(135deg,#c4912c,#ddb75d)] px-7 py-3 text-sm font-black text-[#102719] shadow-[0_14px_32px_rgba(196,145,44,0.28)] transition duration-200 hover:-translate-y-0.5 active:scale-[0.985]"
+                className="animate-fade-up inline-flex min-h-[2.75rem] items-center justify-center rounded-[var(--r-lg)] bg-[#087f8c] px-7 py-3 text-sm font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 active:scale-[0.985]"
               >
                 {t('auth.joinNow')}
               </Link>

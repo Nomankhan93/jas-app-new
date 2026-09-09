@@ -625,7 +625,7 @@ const pwaStyles = `
     height: 2.45rem;
     place-items: center;
     border-radius: 999px;
-    background: #0b2a1d;
+    background: #142d4e;
     color: #fff8e6;
     font-size: 1.15rem;
     font-weight: 900;

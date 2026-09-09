@@ -50,16 +50,16 @@ export function CmsPublicPage({ slug }: CmsPublicPageProps) {
   return (
     <main className="px-3 py-8 sm:px-4 sm:py-12" dir="ltr">
       <div className="page-wrap space-y-8">
-        <section className="soft-panel relative overflow-hidden rounded-[2rem] border border-[#e8e0d1] bg-[linear-gradient(135deg,#fffdf8_0%,#f7f1e6_54%,#edf4ee_100%)] p-[clamp(1.5rem,4vw,3.6rem)] shadow-[0_28px_80px_rgba(11,42,29,0.10)]">
+        <section className="soft-panel relative overflow-hidden rounded-[2rem] border border-[#dce4ee] bg-[linear-gradient(135deg,#fffdf8_0%,#f7f1e6_54%,#edf4ee_100%)] p-[clamp(1.5rem,4vw,3.6rem)] shadow-[0_28px_80px_rgba(11,42,29,0.10)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(196,145,44,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(11,42,29,0.10),transparent_30%)]" />
 
           <div className="relative z-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
             <div className={publicCopy.textAlignClass} dir={publicCopy.textDir}>
               <p className="section-eyebrow mb-4">{fallback.eyebrow || config.eyebrow}</p>
-              <h1 className="max-w-4xl text-[clamp(2.4rem,5.8vw,5.2rem)] font-black leading-[0.96] tracking-[-0.06em] text-stone-950">
+              <h1 className="max-w-4xl text-[clamp(2.4rem,5.8vw,5.2rem)] font-black leading-[0.96] tracking-[-0.06em] text-slate-950">
                 {title}
               </h1>
-              <p className="mt-6 max-w-3xl text-pretty text-base font-medium leading-8 text-stone-600 sm:text-lg">
+              <p className="mt-6 max-w-3xl text-pretty text-base font-medium leading-8 text-slate-600 sm:text-lg">
                 {subtitle}
               </p>
 
@@ -81,10 +81,10 @@ export function CmsPublicPage({ slug }: CmsPublicPageProps) {
               <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-800 ${publicCopy.isRtl ? 'mr-auto' : ''}`}>
                 <ShieldCheck size={24} />
               </div>
-              <h2 className="mt-5 text-xl font-black text-stone-950">
+              <h2 className="mt-5 text-xl font-black text-slate-950">
                 {publicCopy.shared.officialContent}
               </h2>
-              <p className="mt-2 text-sm leading-7 text-stone-600">
+              <p className="mt-2 text-sm leading-7 text-slate-600">
                 {publicCopy.shared.cmsManaged}
               </p>
               <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-emerald-900">

@@ -234,7 +234,7 @@ function DesignationHoldersPage() {
   return (
     <main className="px-3 py-8 sm:px-4 sm:py-12" dir="ltr">
       <div className="page-wrap space-y-7">
-        <section className="overflow-hidden rounded-[2.2rem] bg-[linear-gradient(135deg,#fffdf8,#f7f1e6_50%,#ecf6ef)] p-6 shadow-sm ring-1 ring-slate-200/70 sm:p-8 lg:p-10">
+        <section className="overflow-hidden rounded-[2.2rem] bg-[linear-gradient(135deg,#ffffff,#f7f1e6_50%,#ecf6ef)] p-6 shadow-sm ring-1 ring-slate-200/70 sm:p-8 lg:p-10">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
             <div>
               <p className="section-eyebrow mb-3">{copy.eyebrow}</p>

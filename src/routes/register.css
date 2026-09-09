@@ -1,6 +1,6 @@
 /* Register route styles extracted from register.tsx to reduce component size and avoid duplicate font imports. */
   :root {
-    --reg-cream: #F8F5EF;
+    --reg-cream: #f4f7fb;
     --reg-paper: #FFFDF9;
     --reg-ink: #1C1A17;
     --reg-muted: #7A7670;

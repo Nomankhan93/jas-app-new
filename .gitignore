@@ -65,3 +65,7 @@ test-results/
 .env.bak
 .env.local.*
 .env-safety-backups/
+.env-safety-backups/
+
+# Local design patch backups
+/.jas-design-backups/

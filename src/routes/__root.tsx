@@ -26,13 +26,13 @@ export const Route = createRootRoute({
         content:
           'Jatt Alliance Sindh membership registration, admin approval, QR verification, digital ID card and member-verified education, health, welfare and employment support platform.',
       },
-      { name: 'theme-color', content: '#0b2a1d' },
+      { name: 'theme-color', content: '#142d4e' },
       { name: 'application-name', content: 'JAS' },
       { name: 'mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-title', content: 'JAS' },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
-      { name: 'msapplication-TileColor', content: '#0b2a1d' },
+      { name: 'msapplication-TileColor', content: '#142d4e' },
       { name: 'format-detection', content: 'telephone=no' },
       {
         property: 'og:title',
@@ -60,6 +60,7 @@ function RootComponent() {
     select: (state) => state.location.pathname,
   })
 
+  const isLandingPage = pathname === '/'
   const isPublicVerifyPage = pathname.startsWith('/verify/')
   const isCardPreviewPage =
     pathname === '/card' ||
@@ -68,15 +69,11 @@ function RootComponent() {
 
   return (
     <RootDocument>
-      <div className="min-h-screen bg-[linear-gradient(180deg,#fbf9f4_0%,#f6f2e9_55%,#f8f5ef_100%)] text-stone-950">
-        <div
-          className="animate-fade-in pointer-events-none fixed inset-x-0 top-0 z-0 h-[28rem] bg-[radial-gradient(circle_at_top_left,rgba(196,145,44,0.14),transparent_40%),radial-gradient(circle_at_top_right,rgba(11,42,29,0.10),transparent_35%)]"
-          aria-hidden="true"
-        />
+      <div className="jas-app">
 
         <PwaBootstrap />
         <AppUpdateReset />
-        {!isPublicVerifyPage ? <Header compact={isCardPreviewPage} /> : null}
+        {!isPublicVerifyPage && !isLandingPage ? <Header compact={isCardPreviewPage} /> : null}
 
         <div className="animate-fade-up relative z-10">
           <Outlet />

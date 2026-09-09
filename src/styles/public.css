@@ -60,9 +60,9 @@
   position: relative;
   overflow: hidden;
   padding: clamp(1.5rem, 4vw, 3.5rem);
-  border: 1px solid #e8e0d1;
+  border: 1px solid #dce4ee;
   border-radius: 2.5rem;
-  background: linear-gradient(135deg, #fffdf8 0%, #f7f1e6 50%, #edf4ee 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f4f7fb 50%, #eaf5f7 100%);
   box-shadow: 0 30px 80px rgba(11, 42, 29, 0.1);
 }
 
@@ -206,7 +206,7 @@
 
 .home-trust-strip {
   padding: 1.25rem 1.5rem;
-  border: 1px solid #e8e0d1;
+  border: 1px solid #dce4ee;
   border-radius: 1.5rem;
   box-shadow: var(--shadow-xs);
 }
@@ -215,7 +215,7 @@
   position: relative;
   overflow: hidden;
   padding: clamp(2rem, 4vw, 3.5rem);
-  border: 1px solid #e8e0d1;
+  border: 1px solid #dce4ee;
   border-radius: 2rem;
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 20px 55px rgba(11, 42, 29, 0.07);

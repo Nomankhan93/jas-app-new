@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'jas-pwa'
-const CACHE_VERSION = 'v8-push-reliability-preferences'
+const CACHE_VERSION = 'v9-navy-teal-design'
 const CACHE_NAME = `${CACHE_PREFIX}-${CACHE_VERSION}`
 const CORE_ASSETS = [
   '/offline.html',

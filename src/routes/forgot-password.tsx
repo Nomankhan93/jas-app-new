@@ -87,7 +87,7 @@ function ForgotPasswordPage() {
   }
 
   return (
-    <main className="page-main">
+    <main className="page-main auth-page">
       <div className="page-wrap page-stack" dir={direction}>
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
           <aside className="home-hero animate-fade-up">
@@ -134,7 +134,7 @@ function ForgotPasswordPage() {
             </div>
           </aside>
 
-          <section className="soft-panel animate-scale-in rounded-[2rem] border-[#e8e0d1] bg-white p-5 shadow-[0_24px_70px_rgba(20,18,16,0.08)] sm:p-7">
+          <section className="soft-panel animate-scale-in rounded-[2rem] border-[#dce4ee] bg-white p-5 shadow-[0_24px_70px_rgba(20,18,16,0.08)] sm:p-7">
             <div className="mb-6">
               <div className="badge-soft bg-[var(--gold-pale)] text-[var(--gold)]">
                 <Sparkles size={14} />
@@ -143,7 +143,7 @@ function ForgotPasswordPage() {
 
               <h2 className="section-title mt-4">{t('forgot.form.title')}</h2>
 
-              <p className="mt-3 text-sm leading-7 text-stone-600">
+              <p className="mt-3 text-sm leading-7 text-slate-600">
                 {sentToEmail ? t('forgot.sent.description') : t('forgot.form.description')}
               </p>
             </div>
@@ -191,15 +191,15 @@ function ForgotPasswordPage() {
               </form>
             )}
 
-            <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[var(--paper)] p-4 text-sm leading-7 text-stone-600">
-              <div className="mb-2 flex items-center gap-2 font-extrabold text-stone-800">
+            <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[var(--paper)] p-4 text-sm leading-7 text-slate-600">
+              <div className="mb-2 flex items-center gap-2 font-extrabold text-slate-800">
                 <HelpCircle size={16} className="text-[var(--forest)]" />
                 {t('forgot.help.title')}
               </div>
               <p>{t('forgot.form.emailOnlyNote')}</p>
             </div>
 
-            <p className="mt-6 text-center text-sm text-stone-600">
+            <p className="mt-6 text-center text-sm text-slate-600">
               <Link to="/login" className="inline-flex items-center justify-center gap-2 font-bold text-[var(--forest)]">
                 <ArrowLeft size={15} />
                 {t('forgot.backToLogin')}
@@ -239,8 +239,8 @@ function EmailSentPanel({
         </p>
       </div>
 
-      <div className="grid gap-3 rounded-[1.25rem] border border-[var(--line)] bg-white p-4 text-sm leading-7 text-stone-600">
-        <p className="font-extrabold text-stone-900">{t('forgot.sent.nextStepsTitle')}</p>
+      <div className="grid gap-3 rounded-[1.25rem] border border-[var(--line)] bg-white p-4 text-sm leading-7 text-slate-600">
+        <p className="font-extrabold text-slate-900">{t('forgot.sent.nextStepsTitle')}</p>
         <ul className="list-disc space-y-1 ps-5">
           <li>{t('forgot.sent.stepInbox')}</li>
           <li>{t('forgot.sent.stepSpam')}</li>
@@ -284,7 +284,7 @@ function FormField({
     <div className="block">
       <label
         htmlFor={htmlFor}
-        className="mb-2 block text-sm font-semibold text-stone-700"
+        className="mb-2 block text-sm font-semibold text-slate-700"
       >
         {label}
       </label>
@@ -343,8 +343,8 @@ function FeaturePill({
       <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--gold-pale)] text-[var(--forest)]">
         {icon}
       </div>
-      <p className="text-sm font-bold text-stone-900">{title}</p>
-      <p className="mt-1 text-xs text-stone-500">{text}</p>
+      <p className="text-sm font-bold text-slate-900">{title}</p>
+      <p className="mt-1 text-xs text-slate-500">{text}</p>
     </div>
   )
 }

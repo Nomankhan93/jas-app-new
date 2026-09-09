@@ -1,24 +1,24 @@
 /* ─── Design Tokens ──────────────────────────────────── */
 :root {
-  --ink: #141210;
-  --ink-soft: #5c5448;
-  --ink-muted: #9c9488;
+  --ink: #172b4d;
+  --ink-soft: #52647b;
+  --ink-muted: #687a90;
 
-  --forest: #1a4d2e;
-  --forest-mid: #236638;
-  --forest-light: #2d7a46;
-  --forest-dark: #0b2f1d;
-  --forest-deep: #071f15;
+  --forest: #087f8c;
+  --forest-mid: #076b76;
+  --forest-light: #0b8793;
+  --forest-dark: #142d4e;
+  --forest-deep: #10233e;
   --forest-glow: rgba(26, 77, 46, 0.12);
 
-  --gold: #b07d2a;
-  --gold-light: #c9952f;
-  --gold-bright: #ddb75d;
-  --gold-pale: #f5edd8;
+  --gold: #08717c;
+  --gold-light: #62c8d0;
+  --gold-bright: #bcebef;
+  --gold-pale: #e6f5f7;
   --gold-glow: rgba(176, 125, 42, 0.18);
 
-  --teal: #2e8b78;
-  --teal-soft: #dff0ec;
+  --teal: #087f8c;
+  --teal-soft: #e6f5f7;
 
   --red: #c0392b;
   --red-soft: #fdf2f2;
@@ -26,8 +26,8 @@
   --amber: #b7791f;
   --amber-soft: #fff8e5;
 
-  --parchment: #f8f4ee;
-  --paper: #fdfbf7;
+  --parchment: #f4f7fb;
+  --paper: #ffffff;
   --surface: #ffffff;
 
   --line: rgba(20, 18, 16, 0.08);
@@ -76,18 +76,7 @@ body {
   margin: 0;
   color: var(--ink);
   background-color: var(--parchment);
-  background-image:
-    radial-gradient(
-      ellipse 70% 50% at 5% 0%,
-      rgba(26, 77, 46, 0.07) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 50% 40% at 95% 100%,
-      rgba(176, 125, 42, 0.07) 0%,
-      transparent 55%
-    ),
-    url("data:image/svg+xml,%3Csvg width='52' height='52' viewBox='0 0 52 52' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%231A4D2E' fill-opacity='0.025'%3E%3Cpath d='M26 0l4 4-4 4-4-4 4-4zm0 44l4 4-4 4-4-4 4-4zM0 26l4-4 4 4-4 4-4-4zm44 0l4-4 4 4-4 4-4-4z'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: none;
 }
 
 body,

@@ -162,7 +162,7 @@ function ResetPasswordPage() {
   }
 
   return (
-    <main className="page-main">
+    <main className="page-main auth-page">
       <div className="page-wrap page-stack" dir={direction}>
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
           <aside className="home-hero animate-fade-up">
@@ -195,14 +195,14 @@ function ResetPasswordPage() {
                   <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--gold-pale)] text-[var(--forest)]">
                     <ShieldCheck size={16} />
                   </div>
-                  <p className="text-sm font-bold text-stone-900">{t('reset.security.title')}</p>
-                  <p className="mt-1 text-sm leading-7 text-stone-600">{t('reset.security.text')}</p>
+                  <p className="text-sm font-bold text-slate-900">{t('reset.security.title')}</p>
+                  <p className="mt-1 text-sm leading-7 text-slate-600">{t('reset.security.text')}</p>
                 </div>
               </div>
             </div>
           </aside>
 
-          <section className="soft-panel animate-scale-in rounded-[2rem] border-[#e8e0d1] bg-white p-5 shadow-[0_24px_70px_rgba(20,18,16,0.08)] sm:p-7">
+          <section className="soft-panel animate-scale-in rounded-[2rem] border-[#dce4ee] bg-white p-5 shadow-[0_24px_70px_rgba(20,18,16,0.08)] sm:p-7">
             <div className="mb-6">
               <div className="badge-soft bg-[var(--gold-pale)] text-[var(--gold)]">
                 <Sparkles size={14} />
@@ -211,13 +211,13 @@ function ResetPasswordPage() {
 
               <h2 className="section-title mt-4">{t('reset.form.title')}</h2>
 
-              <p className="mt-3 text-sm leading-7 text-stone-600">
+              <p className="mt-3 text-sm leading-7 text-slate-600">
                 {t('reset.form.description')}
               </p>
             </div>
 
             {checkingSession ? (
-              <div className="flex items-center gap-3 rounded-[1rem] border border-[var(--line)] bg-[var(--paper)] px-4 py-4 text-sm font-bold text-stone-700">
+              <div className="flex items-center gap-3 rounded-[1rem] border border-[var(--line)] bg-[var(--paper)] px-4 py-4 text-sm font-bold text-slate-700">
                 <Loader2 className="h-5 w-5 animate-spin text-emerald-700" />
                 {t('reset.checking')}
               </div>
@@ -286,7 +286,7 @@ function ResetPasswordPage() {
               <InvalidResetLinkPanel error={error || t('reset.error.linkInvalid')} t={t} />
             )}
 
-            <p className="mt-6 text-center text-sm text-stone-600">
+            <p className="mt-6 text-center text-sm text-slate-600">
               <Link to="/login" className="inline-flex items-center justify-center gap-2 font-bold text-[var(--forest)]">
                 <ArrowLeft size={15} />
                 {t('forgot.backToLogin')}
@@ -334,7 +334,7 @@ function PasswordInput({
       <button
         type="button"
         onClick={onTogglePassword}
-        className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-lg p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+        className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-lg p-2 text-slate-500 transition hover:bg-stone-100 hover:text-stone-900"
         aria-label={showPassword ? hideLabel : showLabel}
       >
         {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -353,7 +353,7 @@ function PasswordStrengthMeter({
   return (
     <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--paper)] p-4" aria-live="polite">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-black text-stone-900">
+        <div className="flex items-center gap-2 text-sm font-black text-slate-900">
           <LockKeyhole size={16} className="text-[var(--forest)]" />
           {t('reset.strength.title')}
         </div>
@@ -371,7 +371,7 @@ function PasswordStrengthMeter({
         ))}
       </div>
 
-      <p className="mb-3 text-xs font-semibold text-stone-600">{t(strength.helperKey)}</p>
+      <p className="mb-3 text-xs font-semibold text-slate-600">{t(strength.helperKey)}</p>
 
       <div className="grid gap-2 sm:grid-cols-2">
         {strength.criteria.map((criterion) => (
@@ -381,7 +381,7 @@ function PasswordStrengthMeter({
               criterion.met ? 'text-emerald-700' : 'text-stone-500'
             }`}
           >
-            {criterion.met ? <CheckCircle2 size={14} /> : <span className="h-3.5 w-3.5 rounded-full border border-stone-300" />}
+            {criterion.met ? <CheckCircle2 size={14} /> : <span className="h-3.5 w-3.5 rounded-full border border-slate-300" />}
             {t(criterion.labelKey)}
           </div>
         ))}
@@ -428,7 +428,7 @@ function FormField({
     <div className="block">
       <label
         htmlFor={htmlFor}
-        className="mb-2 block text-sm font-semibold text-stone-700"
+        className="mb-2 block text-sm font-semibold text-slate-700"
       >
         {label}
       </label>
