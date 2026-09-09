@@ -62,6 +62,7 @@ export function RegisterIdentityStep({
         >
           <input
             id="cnic"
+            dir="ltr"
             value={form.cnic}
             onChange={(event) => updateField('cnic', formatCnicInput(event.target.value))}
             disabled={locked}
@@ -83,6 +84,7 @@ export function RegisterIdentityStep({
         >
           <input
             id="mobile"
+            dir="ltr"
             value={form.mobile}
             onChange={(event) => updateField('mobile', formatMobileInput(event.target.value))}
             disabled={locked}

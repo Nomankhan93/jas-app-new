@@ -62,6 +62,7 @@ export function RegisterEmergencyStep({
         >
           <input
             id="emergencyContactMobile"
+            dir="ltr"
             value={form.emergencyContactMobile}
             onChange={(event) =>
               updateField('emergencyContactMobile', formatMobileInput(event.target.value))

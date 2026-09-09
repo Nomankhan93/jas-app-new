@@ -62,6 +62,7 @@ export function RegisterProfileStep({
         >
           <input
             id="dateOfBirth"
+            dir="ltr"
             type="date"
             value={form.dateOfBirth}
             onChange={(event) => updateField('dateOfBirth', event.target.value)}
@@ -124,6 +125,7 @@ export function RegisterProfileStep({
         >
           <select
             id="bloodGroup"
+            dir="ltr"
             value={form.bloodGroup}
             onChange={(event) => updateField('bloodGroup', event.target.value)}
             disabled={locked}
