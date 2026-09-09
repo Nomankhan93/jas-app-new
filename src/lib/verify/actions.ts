@@ -1,11 +1,10 @@
 // src/lib/verify/actions.ts
+import { normalizeVerificationNumber } from './validation'
 import { createServerFn } from '@tanstack/react-start'
 import { createSupabaseAdminClient } from '../supabase/admin'
 
 const MEMBER_PHOTO_BUCKET = 'member-photos'
 const PHOTO_SIGNED_URL_TTL_SECONDS = 60 * 10
-const MIN_MEMBER_NUMBER_LENGTH = 3
-const MAX_MEMBER_NUMBER_LENGTH = 80
 
 type MemberStatus = 'pending' | 'approved' | 'rejected'
 
@@ -55,24 +54,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function normalizeMemberNo(memberNo: string) {
-  const normalized = memberNo.trim()
-
-  if (normalized.length < MIN_MEMBER_NUMBER_LENGTH) {
-    throw new Error(
-      `Member number must be at least ${MIN_MEMBER_NUMBER_LENGTH} characters.`,
-    )
-  }
-
-  if (normalized.length > MAX_MEMBER_NUMBER_LENGTH) {
-    throw new Error(
-      `Member number must be less than ${MAX_MEMBER_NUMBER_LENGTH} characters.`,
-    )
-  }
-
-  return normalized
-}
-
 function validateVerifyInput(data: unknown): VerifyMemberInput {
   if (!isRecord(data)) {
     throw new Error('Invalid verification request.')
@@ -85,7 +66,7 @@ function validateVerifyInput(data: unknown): VerifyMemberInput {
   }
 
   return {
-    memberNo: normalizeMemberNo(memberNo),
+    memberNo: normalizeVerificationNumber(memberNo),
   }
 }
 
@@ -291,7 +272,11 @@ async function fetchActiveMemberDesignation(
 export const verifyMemberAction = createServerFn({ method: 'POST' })
   .inputValidator(validateVerifyInput)
   .handler(async ({ data }): Promise<VerifyMemberResult> => {
+    try {
     const supabaseAdmin = createSupabaseAdminClient()
+    const { data: permitted, error: limitError } = await supabaseAdmin.rpc('consume_public_verification_budget', { _member_no: data.memberNo })
+    if (limitError) throw new Error('VERIFY_UNAVAILABLE')
+    if (permitted !== true) throw new Error('VERIFY_RATE_LIMITED')
 
     const { data: member, error } = await supabaseAdmin
       .from('members')
@@ -312,7 +297,7 @@ export const verifyMemberAction = createServerFn({ method: 'POST' })
       .maybeSingle()
 
     if (error) {
-      throw new Error(error.message)
+      throw new Error('VERIFY_UNAVAILABLE')
     }
 
     if (!member) {
@@ -341,5 +326,9 @@ export const verifyMemberAction = createServerFn({ method: 'POST' })
       ...result,
       photoSignedUrl,
       activeDesignation,
+    }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'VERIFY_RATE_LIMITED') throw error
+      throw new Error('VERIFY_UNAVAILABLE')
     }
   })

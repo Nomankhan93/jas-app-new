@@ -1,7 +1,9 @@
 import { expect, it, vi } from 'vitest'
+const budget = vi.hoisted(() => ({ allowed: true, error: null as null | { message: string } }))
 const calls = vi.hoisted(() => [] as Array<[string, ...unknown[]]>)
 vi.mock('@tanstack/react-start', () => ({ createServerFn: () => ({ inputValidator: () => ({ handler: (fn: unknown) => fn }) }) }))
 vi.mock('../supabase/admin', () => ({ createSupabaseAdminClient: () => ({
+  rpc: async () => ({ data: budget.allowed, error: budget.error }),
   from: (table: string) => {
     const q = {
       select: (value: string) => { if (table !== 'members') calls.push(['select', value]); return q },
@@ -30,4 +32,21 @@ it('filters both validity boundaries and public active committees before limitin
     expect(String(calls[0][1])).toContain('organization_committees!inner')
     expect(calls.findIndex(([method]) => method === 'limit')).toBeGreaterThan(calls.findIndex(([method]) => method === 'gte'))
   } finally { vi.useRealTimers() }
+})
+
+it('rejects over-budget requests before reading a member', async () => {
+  budget.allowed = false
+  calls.length = 0
+  try {
+    const handler = verifyMemberAction as unknown as (args: { data: { memberNo: string } }) => Promise<unknown>
+    await expect(handler({ data: { memberNo: 'JAS-2026-0001' } })).rejects.toThrow('VERIFY_RATE_LIMITED')
+    expect(calls).toEqual([])
+  } finally { budget.allowed = true }
+})
+it('fails closed with a safe message when the budget database is unavailable', async () => {
+  budget.error = { message: 'private database implementation details' }
+  try {
+    const handler = verifyMemberAction as unknown as (args: { data: { memberNo: string } }) => Promise<unknown>
+    await expect(handler({ data: { memberNo: 'JAS-2026-0001' } })).rejects.toThrow('VERIFY_UNAVAILABLE')
+  } finally { budget.error = null }
 })

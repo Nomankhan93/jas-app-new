@@ -1,6 +1,6 @@
 // src/routes/verify/$memberNo.tsx
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   AlertCircle,
@@ -17,6 +17,7 @@ import {
   User,
   XCircle,
 } from 'lucide-react'
+import { verificationErrorText } from '../../lib/verify/validation'
 import { verifyMemberAction } from '../../lib/verify/actions'
 import { useI18n, type AppLanguage } from '../../lib/i18n'
 
@@ -270,6 +271,17 @@ function VerifyMemberPage() {
   const { language } = useI18n()
   const text = verifyPageText[language] ?? verifyPageText.en
 
+  const cooldownRef = useRef(0)
+  const requestId = useRef(0)
+  const inFlight = useRef(false)
+  const [cooldownUntil, setCooldownUntil] = useState(0)
+  const [clock, setClock] = useState(Date.now())
+  useEffect(() => {
+    if (!cooldownUntil) return
+    const timer = setInterval(() => { const now = Date.now(); setClock(now); if (now >= cooldownUntil) setCooldownUntil(0) }, 1000)
+    return () => clearInterval(timer)
+  }, [cooldownUntil])
+  const coolingDown = clock < cooldownUntil
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [result, setResult] = useState<VerifyResult | null>(null)
@@ -282,6 +294,9 @@ function VerifyMemberPage() {
       options?: { silent?: boolean },
     ) => {
       const silent = options?.silent ?? false
+      if (silent && (inFlight.current || Date.now() < cooldownRef.current)) return
+      const id = ++requestId.current
+      inFlight.current = true
 
       if (silent) {
         setRefreshing(true)
@@ -299,24 +314,26 @@ function VerifyMemberPage() {
           },
         })
 
-        if (!cancelledRef?.current) {
+        if (!cancelledRef?.current && requestId.current === id) {
           setResult(data)
         }
       } catch (err) {
-        if (!cancelledRef?.current) {
+        if (!cancelledRef?.current && requestId.current === id) {
           setResult(null)
+          if (err instanceof Error && err.message.includes('VERIFY_RATE_LIMITED')) { cooldownRef.current = Date.now() + 60000; setCooldownUntil(cooldownRef.current) }
           setError(
-            err instanceof Error ? err.message : text.errorLoad,
+            verificationErrorText(language, err instanceof Error ? err.message : ''),
           )
         }
       } finally {
-        if (!cancelledRef?.current) {
+        if (!cancelledRef?.current && requestId.current === id) {
+          inFlight.current = false
           setLoading(false)
           setRefreshing(false)
         }
       }
     },
-    [memberNo, text.errorLoad],
+    [memberNo, language],
   )
 
   useEffect(() => {
@@ -326,6 +343,8 @@ function VerifyMemberPage() {
 
     return () => {
       cancelledRef.current = true
+      ++requestId.current
+      inFlight.current = false
     }
   }, [loadVerification])
 
@@ -387,13 +406,13 @@ function VerifyMemberPage() {
               <button
                 type="button"
                 onClick={() => void loadVerification(undefined, { silent: true })}
-                disabled={refreshing}
+                disabled={refreshing || coolingDown}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw
                   className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
                 />
-                {text.refresh}
+                {text.refresh}{coolingDown ? ` (${Math.ceil((cooldownUntil - clock) / 1000)}s)` : ''}
               </button>
 
               <button

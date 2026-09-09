@@ -1539,6 +1539,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_public_verification_budget: { Args: { _member_no: string }; Returns: boolean }
       admin_send_bulk_notification: {
         Args: {
           _action_url?: string
