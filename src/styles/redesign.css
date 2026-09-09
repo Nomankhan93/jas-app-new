@@ -159,3 +159,29 @@ html[lang='ur'], html[lang='sd'] { --font-body: "Noto Sans Arabic", "Segoe UI", 
 .welcome-brand strong { font-size: clamp(1.05rem, 2.3vw, 1.4rem); line-height: 1.35; letter-spacing: -.025em; }
 .welcome-intro > .welcome-tagline { margin-block: .75rem 1.25rem; color: #08717c; font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 700; line-height: 1.6; }
 .welcome-page[dir='rtl'] .welcome-tagline { text-align: right; }
+
+/* Homepage-only Ajrak decoration; existing content and layout stay intact. */
+.welcome-page {
+  position: relative;
+  isolation: isolate;
+}
+.welcome-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("/jas/ajrak-pattern.svg") repeat top center / 192px 192px;
+  opacity: .075;
+  -webkit-mask-image: linear-gradient(to right, #000 0%, rgba(0,0,0,.55) 14%, rgba(0,0,0,.08) 32%, transparent 45%, transparent 55%, rgba(0,0,0,.08) 68%, rgba(0,0,0,.55) 86%, #000 100%);
+  mask-image: linear-gradient(to right, #000 0%, rgba(0,0,0,.55) 14%, rgba(0,0,0,.08) 32%, transparent 45%, transparent 55%, rgba(0,0,0,.08) 68%, rgba(0,0,0,.55) 86%, #000 100%);
+}
+@media (max-width: 767px) {
+  .welcome-page::before {
+    opacity: .035;
+    background-size: 144px 144px;
+  }
+}
+@media print {
+  .welcome-page::before { display: none; }
+}
