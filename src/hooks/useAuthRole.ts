@@ -12,6 +12,7 @@ export function useAuthRole() {
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [accountUserId, setAccountUserId] = useState('')
   const [accountEmail, setAccountEmail] = useState('')
 
   const checkAdmin = useCallback(async (userId: string) => {
@@ -34,6 +35,7 @@ export function useAuthRole() {
     async (user?: AuthUser | null) => {
       const userId = user?.id ?? null
 
+      setAccountUserId(userId ?? '')
       setIsLoggedIn(Boolean(userId))
       setAccountEmail(user?.email ?? '')
 
@@ -58,6 +60,7 @@ export function useAuthRole() {
         setIsLoggedIn(false)
         setIsAdmin(false)
         setAccountEmail('')
+        setAccountUserId('')
         setAuthLoading(false)
         return
       }
@@ -98,6 +101,7 @@ export function useAuthRole() {
     setIsLoggedIn(false)
     setIsAdmin(false)
     setAccountEmail('')
+    setAccountUserId('')
     setLogoutLoading(false)
     return true
   }
@@ -107,6 +111,7 @@ export function useAuthRole() {
     logoutLoading,
     isLoggedIn,
     isAdmin,
+    accountUserId,
     accountEmail,
     accountInitial,
     logout,

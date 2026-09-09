@@ -1,421 +1,177 @@
-import { ShieldCheck } from 'lucide-react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import {
-  getLoggedOutAccountItems,
-  getMemberAccountItems,
-  programItems,
-  programTranslationKeys,
-  publicPageItems,
-  publicPageTranslationKeys,
-  type HeaderMenuKey,
-} from '../../config/navigation'
+import { Check, ChevronDown, Globe2, LogOut, Menu, ShieldCheck, Users, X } from 'lucide-react'
+import { getMemberAccountItems, programItems, programTranslationKeys, publicPageItems, publicPageTranslationKeys, type NavItem } from '../../config/navigation'
 import { useAuthRole } from '../../hooks/useAuthRole'
-import {
-  LanguageSwitcher,
-  useI18n,
-  type TranslationKey,
-} from '../../lib/i18n'
-import { AccountMenuButton, AccountMenuPanel } from './AccountMenu'
+import { APP_LANGUAGES, useI18n, type TranslationKey } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase/client'
-import { MoreDropdown } from './MoreDropdown'
-import { NavLink } from './NavLink'
-import { ProgramsDropdown } from './ProgramsDropdown'
 
-export function Header({ compact }: { compact: boolean }) {
-  const { language, t } = useI18n()
+type OpenMenu = 'programs' | 'organization' | 'language' | 'account' | null
+const copy = {
+  en: { governance: 'Governance', community: 'Community', navigation: 'Main navigation', open: 'Open navigation', close: 'Close navigation', account: 'Member account', member: 'Member', memberNo: 'Membership number', holders: 'Office bearers across organization levels', join: 'Join JAS' },
+  ur: { governance: 'نظم و نسق', community: 'برادری', navigation: 'مرکزی مینو', open: 'مینو کھولیں', close: 'مینو بند کریں', account: 'رکن کا اکاؤنٹ', member: 'رکن', memberNo: 'رکنیت نمبر', holders: 'تنظیمی سطحوں کے عہدیداران', join: 'رکن بنیں' },
+  sd: { governance: 'انتظام', community: 'برادري', navigation: 'مکيه مينيو', open: 'مينيو کوليو', close: 'مينيو بند ڪريو', account: 'ميمبر جو اڪائونٽ', member: 'ميمبر', memberNo: 'ميمبرشپ نمبر', holders: 'تنظيمي سطحن جا عهديدار', join: 'ميمبر ٿيو' },
+}
+
+export function Header({ compact: _compact }: { compact: boolean }) {
+  const { language, direction, setLanguage, t } = useI18n()
+  const text = copy[language]
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const [openMenu, setOpenMenu] = useState<HeaderMenuKey>(null)
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
-  const headerRef = useRef<HTMLElement | null>(null)
-
-  const {
-    authLoading,
-    logoutLoading,
-    isLoggedIn,
-    isAdmin,
-    accountInitial,
-    logout,
-  } = useAuthRole()
-
-  const programsOpen = openMenu === 'programs'
-  const moreOpen = openMenu === 'more'
-  const accountOpen = openMenu === 'account'
-
-  useEffect(() => {
-    setOpenMenu(null)
-  }, [pathname])
-
-  useEffect(() => {
-    if (!openMenu) return
-
-    function handlePointerDown(event: MouseEvent | TouchEvent) {
-      const target = event.target
-
-      if (target instanceof Node && headerRef.current?.contains(target)) {
-        return
-      }
-
-      setOpenMenu(null)
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpenMenu(null)
-      }
-    }
-
-    document.addEventListener('mousedown', handlePointerDown)
-    document.addEventListener('touchstart', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-      document.removeEventListener('touchstart', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [openMenu])
-
-  useEffect(() => {
-    if (!openMenu) return
-
-    const isMobileViewport = window.matchMedia('(max-width: 1023px)').matches
-    if (!isMobileViewport) return
-
-    const scrollY = window.scrollY
-    const previousOverflow = document.body.style.overflow
-    const previousPosition = document.body.style.position
-    const previousTop = document.body.style.top
-    const previousWidth = document.body.style.width
-
-    document.body.style.overflow = 'hidden'
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.width = '100%'
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-      document.body.style.position = previousPosition
-      document.body.style.top = previousTop
-      document.body.style.width = previousWidth
-      window.scrollTo(0, scrollY)
-    }
-  }, [openMenu])
-
-  useEffect(() => {
-    let active = true
-
-    async function loadUnreadNotifications() {
-      if (!isLoggedIn) {
-        if (active) setUnreadNotificationCount(0)
-        return
-      }
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
-
-      if (userError || !user) {
-        if (active) setUnreadNotificationCount(0)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('id, is_read')
-        .eq('user_id', user.id)
-        .eq('is_read', false)
-        .order('created_at', { ascending: false })
-
-      if (!active) return
-
-      if (error) {
-        setUnreadNotificationCount(0)
-        return
-      }
-
-      setUnreadNotificationCount(data?.length ?? 0)
-    }
-
-    void loadUnreadNotifications()
-
-    function refreshUnreadNotifications() {
-      void loadUnreadNotifications()
-    }
-
-    window.addEventListener('focus', refreshUnreadNotifications)
-    window.addEventListener('jas-notifications-updated', refreshUnreadNotifications as EventListener)
-
-    return () => {
-      active = false
-      window.removeEventListener('focus', refreshUnreadNotifications)
-      window.removeEventListener('jas-notifications-updated', refreshUnreadNotifications as EventListener)
-    }
-  }, [isLoggedIn, pathname])
-
-  const localizedPublicPageItems = useMemo(() => {
-    return publicPageItems.map((item) => {
-      const key = publicPageTranslationKeys[item.to]
-
-      if (!key) return item
-
-      return {
-        ...item,
-        label: t(`public.${key}.label` as TranslationKey),
-        description: t(`public.${key}.description` as TranslationKey),
-      }
-    })
-  }, [language, t])
-
-  const localizedProgramItems = useMemo(() => {
-    return programItems.map((item) => {
-      const key = programTranslationKeys[item.to]
-
-      if (!key) return item
-
-      return {
-        ...item,
-        label: t(`program.${key}.label` as TranslationKey),
-        description: t(`program.${key}.description` as TranslationKey),
-      }
-    })
-  }, [language, t])
-
+  const { authLoading, logoutLoading, isLoggedIn, isAdmin, accountInitial, accountEmail, accountUserId, logout } = useAuthRole()
+  const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [unread, setUnread] = useState({ userId: '', count: 0 })
+  const [profile, setProfile] = useState<{ userId: string; name: string; memberNo: string | null } | null>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const unreadCount = isLoggedIn && unread.userId === accountUserId ? unread.count : 0
+  const currentProfile = isLoggedIn && profile?.userId === accountUserId ? profile : null
   const dashboardPath = isAdmin ? '/admin' : '/dashboard'
   const dashboardLabel = isAdmin ? t('nav.adminPanel') : t('nav.dashboard')
-  const programsActive = pathname.startsWith('/programs/')
-  const moreActive = localizedPublicPageItems.some((item) => isActive(item.to))
-  const brandCompactName = language === 'en' ? 'Jatt Alliance' : t('brand.name')
+  const active = (path: string) => path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`)
+  const close = () => { setOpenMenu(null); setDrawerOpen(false) }
+  const toggle = (menu: Exclude<OpenMenu, null>, button: HTMLButtonElement) => {
+    triggerRef.current = button
+    setOpenMenu((value) => value === menu ? null : menu)
+  }
 
-  const accountItems = useMemo(() => {
-    if (authLoading) return []
-
-    if (!isLoggedIn) {
-      return getLoggedOutAccountItems({
-        login: t('auth.login'),
-        joinNow: t('auth.joinNow'),
-        register: t('nav.register'),
-      })
+  useEffect(() => { setOpenMenu(null); setDrawerOpen(false) }, [pathname])
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 8)
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    return () => window.removeEventListener('scroll', update)
+  }, [])
+  useEffect(() => {
+    if (!openMenu) return
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !headerRef.current?.contains(event.target)) setOpenMenu(null)
     }
-
-    const memberItems = getMemberAccountItems(
-      {
-        dashboard: t('nav.dashboard'),
-        digitalCard: t('nav.digitalCard'),
-        updates: t('nav.updates'),
-        donors: t('nav.donors'),
-        register: t('nav.register'),
-      },
-      unreadNotificationCount,
-    )
-
-    if (!isAdmin) return memberItems
-
-    const memberOnlyItems = memberItems.filter(
-      (item) => item.to !== '/admin' && item.to !== '/dashboard',
-    )
-
-    return [
-      {
-        icon: <ShieldCheck size={17} />,
-        label: t('nav.adminPanel'),
-        to: '/admin',
-      },
-      ...memberOnlyItems,
-    ]
-  }, [authLoading, isAdmin, isLoggedIn, t, unreadNotificationCount])
-
-  function toggleMenu(menu: Exclude<HeaderMenuKey, null>) {
-    setOpenMenu((current) => (current === menu ? null : menu))
-  }
-
-  function closeMenus() {
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setOpenMenu(null); triggerRef.current?.focus() }
+    }
+    document.addEventListener('pointerdown', outside)
+    document.addEventListener('keydown', escape)
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape) }
+  }, [openMenu])
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1280px)')
+    const resize = () => { setOpenMenu(null); setDrawerOpen(false) }
+    media.addEventListener('change', resize)
+    return () => media.removeEventListener('change', resize)
+  }, [])
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!drawerOpen || !dialog) return
     setOpenMenu(null)
+    dialog.showModal()
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { dialog.close(); document.body.style.overflow = previous }
+  }, [drawerOpen])
+  useEffect(() => {
+    let current = true
+    if (!isLoggedIn || !accountUserId) return
+    async function load() {
+      try {
+        const { data, error } = await supabase.from('members').select('full_name, member_no').eq('user_id', accountUserId).maybeSingle()
+        if (current && !error && data) setProfile({ userId: accountUserId, name: data.full_name, memberNo: data.member_no })
+      } catch { /* Profile information is optional; navigation remains available. */ }
+    }
+    void load()
+    return () => { current = false }
+  }, [isLoggedIn, accountUserId, pathname])
+  useEffect(() => {
+    let current = true
+    if (!isLoggedIn || !accountUserId) return
+    async function refresh() {
+      try {
+        const { count, error } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', accountUserId).eq('is_read', false)
+        if (current) setUnread({ userId: accountUserId, count: error ? 0 : count ?? 0 })
+      } catch { if (current) setUnread({ userId: accountUserId, count: 0 }) }
+    }
+    void refresh()
+    window.addEventListener('focus', refresh)
+    window.addEventListener('jas-notifications-updated', refresh)
+    return () => { current = false; window.removeEventListener('focus', refresh); window.removeEventListener('jas-notifications-updated', refresh) }
+  }, [isLoggedIn, accountUserId, pathname])
+
+  const programs = useMemo(() => programItems.map((item) => ({ ...item, label: t(`program.${programTranslationKeys[item.to]}.label` as TranslationKey), description: t(`program.${programTranslationKeys[item.to]}.description` as TranslationKey) })), [t])
+  const pages = useMemo(() => publicPageItems.map((item) => ({ ...item, label: t(`public.${publicPageTranslationKeys[item.to]}.label` as TranslationKey), description: t(`public.${publicPageTranslationKeys[item.to]}.description` as TranslationKey) })), [t])
+  const groups = [
+    { title: t('nav.organization'), items: pages.filter((item) => ['/about', '/vision-mission', '/manifesto', '/constitution'].includes(item.to)) },
+    { title: text.governance, items: [...pages.filter((item) => ['/cwc', '/committees'].includes(item.to)), { to: '/designation-holders', label: t('nav.designationHolders'), description: text.holders, icon: <Users size={17} /> }] },
+    { title: text.community, items: pages.filter((item) => ['/gallery', '/events', '/contact'].includes(item.to)) },
+  ]
+  const memberItems = getMemberAccountItems({ dashboard: t('nav.dashboard'), digitalCard: t('nav.digitalCard'), updates: t('nav.updates'), donors: t('nav.donors'), register: t('nav.register') }, unreadCount)
+  const accountItems: NavItem[] = isAdmin ? [{ to: '/admin', label: t('nav.adminPanel'), icon: <ShieldCheck size={17} /> }, ...memberItems.filter((item) => item.to !== '/dashboard')] : memberItems
+  const chooseLanguage = (next: typeof language) => { setLanguage(next); setOpenMenu(null); if (!drawerOpen) triggerRef.current?.focus() }
+  async function handleLogout() { if (await logout()) { close(); await navigate({ to: '/login', replace: true }) } }
+
+  function brand() {
+    return <Link to="/" className="jas-nav-brand" onClick={close}><img src="/jas/logo.jpeg" alt="" width={46} height={46} /><span><strong>{t('brand.name')}</strong><small lang="en" dir="ltr">Education · Health · Dignity</small></span></Link>
   }
-
-  async function handleLogout() {
-    const loggedOut = await logout()
-
-    if (!loggedOut) return
-
-    setOpenMenu(null)
-    await navigate({ to: '/login', replace: true })
+  function routeLink(to: string, label: string, className = 'jas-nav-link') {
+    return <Link to={to} onClick={close} className={`${className}${active(to) ? ' is-active' : ''}`} aria-current={active(to) ? 'page' : undefined}>{label}</Link>
   }
-
-  function isActive(path: string) {
-    if (path === '/') return pathname === '/'
-    return pathname === path || pathname.startsWith(`${path}/`)
+  function disclosure(menu: 'programs' | 'organization', label: string, isActive: boolean) {
+    return <button type="button" className={`jas-nav-link${isActive ? ' is-active' : ''}`} aria-expanded={openMenu === menu} aria-controls={`jas-nav-${menu}`} onClick={(event) => toggle(menu, event.currentTarget)}>{label}<ChevronDown size={14} aria-hidden="true" /></button>
+  }
+  function itemLink(item: NavItem & { description?: string }) {
+    return <Link key={item.to} to={item.to} onClick={close} className={`jas-menu-link${active(item.to) ? ' is-active' : ''}`} aria-current={active(item.to) ? 'page' : undefined}><span className="jas-menu-icon" aria-hidden="true">{item.icon}</span><span className="jas-menu-copy"><strong>{item.label}</strong>{item.description ? <small title={item.description}>{item.description}</small> : null}</span>{Boolean(item.badgeCount) && <span className="jas-count">{item.badgeCount! > 99 ? '99+' : item.badgeCount}</span>}</Link>
+  }
+  function identity() {
+    return <div className="jas-profile-summary"><strong>{currentProfile?.name || accountEmail || text.account}</strong>{currentProfile?.memberNo ? <span aria-label={text.memberNo}>{currentProfile.memberNo}</span> : null}<small>{isAdmin ? t('nav.adminPanel') : text.member}</small></div>
+  }
+  function languageOptions() {
+    return APP_LANGUAGES.map((option) => <button key={option.code} type="button" className="jas-language-option" lang={option.code} onClick={() => chooseLanguage(option.code)} aria-pressed={language === option.code}><span>{option.nativeLabel}</span>{language === option.code ? <Check size={16} aria-hidden="true" /> : null}</button>)
   }
 
   return (
-    <header
-      ref={headerRef}
-      dir="ltr"
-      className={`site-header ${compact ? 'shadow-[0_10px_30px_rgba(15,23,42,0.06)]' : ''}`}
-    >
-      <div className="site-header-inner page-wrap flex items-center gap-3 py-3">
-        <div className="site-brand-wrap animate-fade-up min-w-0 flex-1 sm:flex-none">
-          <Link
-            to="/"
-            className="site-brand-link brand-pill lift-hover pressable min-w-0 rounded-[1.35rem] px-3 py-2.5 sm:px-4"
-            aria-label="Jatt Alliance Sindh home"
-          >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10">
-              <img src="/jas/logo.jpeg" alt="" width="44" height="44" className="h-11 w-11 rounded-full bg-white object-cover" />
-            </span>
-            <span className="min-w-0">
-              <span className="hidden truncate font-[Manrope,Inter,sans-serif] text-xl font-extrabold tracking-tight text-white sm:block sm:text-2xl">
-                {t('brand.name')}
-              </span>
-              <span className="block truncate font-[Manrope,Inter,sans-serif] text-lg font-extrabold tracking-tight text-white sm:hidden">
-                {brandCompactName}
-              </span>
-              <span className="mt-0.5 block truncate text-[0.65rem] font-extrabold uppercase tracking-[0.22em] text-white/60">
-                {t('brand.platform')}
-              </span>
-            </span>
-            <span className="hidden shrink-0 rounded-full border border-white/12 bg-white/10 px-2.5 py-1 text-[0.62rem] font-extrabold uppercase tracking-[0.18em] text-white/90 sm:inline-flex">
-              JAS
-            </span>
-          </Link>
-        </div>
-
-        <nav className="hidden items-center gap-4 xl:gap-5 lg:flex" aria-label="Main navigation">
-          <NavLink to="/" label={t('nav.home')} active={isActive('/')} delayClass="delay-1" />
-
-          <ProgramsDropdown
-            label={t('nav.programs')}
-            items={localizedProgramItems}
-            open={programsOpen}
-            active={programsActive}
-            onToggle={() => toggleMenu('programs')}
-            onClose={closeMenus}
-            isActive={isActive}
-          />
-
-          <NavLink to="/designation-holders" label={t('nav.designationHolders')} active={isActive('/designation-holders')} delayClass="delay-3" />
-          <NavLink to="/donate" label={t('nav.donate')} active={isActive('/donate')} delayClass="delay-4" />
-          <NavLink to="/news" label={t('nav.news')} active={isActive('/news')} delayClass="delay-5" />
-
-          <MoreDropdown
-            label={t('nav.more')}
-            groupTitle={t('nav.organization')}
-            items={localizedPublicPageItems}
-            open={moreOpen}
-            active={moreActive}
-            onToggle={() => toggleMenu('more')}
-            onClose={closeMenus}
-            isActive={isActive}
-          />
+    <header ref={headerRef} className={`jas-header${scrolled ? ' has-shadow' : ''}`} dir={direction} onBlur={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) setOpenMenu(null) }}>
+      <div className="jas-header-inner">
+        {brand()}
+        <nav className="jas-desktop-nav" aria-label={text.navigation}>
+          {routeLink('/', t('nav.home'))}
+          {disclosure('programs', t('nav.programs'), active('/programs'))}
+          {disclosure('organization', t('nav.organization'), groups.some((group) => group.items.some((item) => active(item.to))))}
+          {routeLink('/news', t('nav.news'))}
+          {routeLink('/donate', t('nav.donate'))}
         </nav>
-
-        <div className="site-header-desktop-actions ml-auto hidden items-center gap-2 xl:gap-3 lg:flex">
-          <LanguageSwitcher />
-
-          {authLoading ? (
-            <div className="h-11 w-28 animate-pulse rounded-[var(--r-lg)] bg-white/25" />
-          ) : isLoggedIn ? (
-            <>
-              <Link to={dashboardPath} className="primary-btn animate-fade-up pressable lift-hover">
-                {dashboardLabel}
-              </Link>
-
-              <div className="relative">
-                <AccountMenuButton
-                  accountInitial={accountInitial}
-                  accountOpen={accountOpen}
-                  isLoggedIn={isLoggedIn}
-                  unreadCount={unreadNotificationCount}
-                  onToggle={() => toggleMenu('account')}
-                />
-                <AccountMenuPanel
-                  accountOpen={accountOpen}
-                  accountItems={accountItems}
-                  isLoggedIn={isLoggedIn}
-                  logoutLoading={logoutLoading}
-                  onClose={closeMenus}
-                  onLogout={() => void handleLogout()}
-                  isActive={isActive}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="secondary-btn animate-fade-up pressable lift-hover">
-                {t('auth.login')}
-              </Link>
-              <Link
-                to="/signup"
-                className="animate-fade-up inline-flex min-h-[2.75rem] items-center justify-center rounded-[var(--r-lg)] bg-[#087f8c] px-7 py-3 text-sm font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 active:scale-[0.985]"
-              >
-                {t('auth.joinNow')}
-              </Link>
-            </>
-          )}
-        </div>
-
-        <div className="site-header-mobile-actions ml-auto flex items-center gap-2 lg:hidden">
-          <LanguageSwitcher compact />
-
-          {authLoading ? (
-            <div className="h-11 w-11 animate-pulse rounded-full bg-emerald-900/25" />
-          ) : (
-            <div className="relative">
-              <AccountMenuButton
-                accountInitial={accountInitial}
-                accountOpen={accountOpen}
-                isLoggedIn={isLoggedIn}
-                unreadCount={unreadNotificationCount}
-                mobile
-                onToggle={() => toggleMenu('account')}
-              />
-              <AccountMenuPanel
-                accountOpen={accountOpen}
-                accountItems={accountItems}
-                isLoggedIn={isLoggedIn}
-                logoutLoading={logoutLoading}
-                mobile
-                onClose={closeMenus}
-                onLogout={() => void handleLogout()}
-                isActive={isActive}
-              />
+        <div className="jas-header-actions">
+          <div className="jas-desktop-control jas-language">
+            <button type="button" className="jas-language-trigger" aria-label={t('language.switchTo')} aria-expanded={openMenu === 'language'} aria-controls="jas-nav-languages" onClick={(event) => toggle('language', event.currentTarget)}><Globe2 size={17} aria-hidden="true" /><span>{language.toUpperCase()}</span><ChevronDown size={13} aria-hidden="true" /></button>
+            {openMenu === 'language' ? <div id="jas-nav-languages" className="jas-popover jas-language-options">{languageOptions()}</div> : null}
+          </div>
+          {authLoading ? <span className="jas-auth-loading" aria-label={t('authPage.common.checkingSession')} /> : isLoggedIn ? <>
+            {routeLink(dashboardPath, dashboardLabel, 'jas-nav-cta jas-desktop-control')}
+            <div className="jas-account">
+              <button type="button" className="jas-avatar" aria-label={t('account.open')} aria-expanded={openMenu === 'account'} aria-controls="jas-nav-account" onClick={(event) => toggle('account', event.currentTarget)}>{(currentProfile?.name.trim().charAt(0) || accountInitial).toUpperCase()}{unreadCount > 0 ? <span className="jas-avatar-count">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
+              {openMenu === 'account' ? <div id="jas-nav-account" className="jas-popover jas-account-panel">{identity()}{accountItems.map(itemLink)}<button type="button" className="jas-nav-logout" disabled={logoutLoading} onClick={() => void handleLogout()}><LogOut size={17} />{logoutLoading ? t('auth.loggingOut') : t('auth.logout')}</button></div> : null}
             </div>
-          )}
+          </> : <div className="jas-auth-links jas-desktop-control">{routeLink('/login', t('auth.login'))}{routeLink('/signup', text.join, 'jas-nav-cta')}</div>}
+          <button type="button" className="jas-mobile-toggle" aria-label={text.open} aria-expanded={drawerOpen} aria-controls="jas-nav-drawer" onClick={() => setDrawerOpen(true)}><Menu size={23} /></button>
         </div>
+        {openMenu === 'programs' ? <div id="jas-nav-programs" className="jas-popover jas-mega-menu jas-program-menu">{programs.map(itemLink)}</div> : null}
+        {openMenu === 'organization' ? <div id="jas-nav-organization" className="jas-popover jas-mega-menu">{groups.map((group) => <section key={group.title}><h2>{group.title}</h2>{group.items.map(itemLink)}</section>)}</div> : null}
       </div>
-
-      <div className="site-mobile-main-nav-wrap lg:hidden">
-        <nav className="site-mobile-main-nav page-wrap" aria-label="Mobile main navigation">
-          <NavLink to="/" label={t('nav.home')} active={isActive('/')} delayClass="delay-1" />
-
-          <ProgramsDropdown
-            label={t('nav.programs')}
-            items={localizedProgramItems}
-            open={programsOpen}
-            active={programsActive}
-            onToggle={() => toggleMenu('programs')}
-            onClose={closeMenus}
-            isActive={isActive}
-          />
-
-          <NavLink to="/designation-holders" label={t('nav.designationHolders')} active={isActive('/designation-holders')} delayClass="delay-3" />
-          <NavLink to="/donate" label={t('nav.donate')} active={isActive('/donate')} delayClass="delay-4" />
-          <NavLink to="/news" label={t('nav.news')} active={isActive('/news')} delayClass="delay-5" />
-
-          <MoreDropdown
-            label={t('nav.more')}
-            groupTitle={t('nav.organization')}
-            items={localizedPublicPageItems}
-            open={moreOpen}
-            active={moreActive}
-            onToggle={() => toggleMenu('more')}
-            onClose={closeMenus}
-            isActive={isActive}
-          />
-        </nav>
-      </div>
+      {drawerOpen ? <dialog ref={dialogRef} id="jas-nav-drawer" className="jas-nav-dialog" aria-label={text.navigation} onCancel={() => setDrawerOpen(false)}>
+        <button type="button" className="jas-drawer-backdrop" tabIndex={-1} aria-label={text.close} onClick={() => setDrawerOpen(false)} />
+        <div className="jas-drawer-panel">
+          <div className="jas-drawer-heading">{brand()}<button type="button" className="jas-close" autoFocus aria-label={text.close} onClick={() => setDrawerOpen(false)}><X size={23} /></button></div>
+          <nav className="jas-drawer-links" aria-label={text.navigation}>
+            {routeLink('/', t('nav.home'))}
+            <details><summary>{t('nav.programs')}<ChevronDown size={16} /></summary><div>{programs.map(itemLink)}</div></details>
+            <details><summary>{t('nav.organization')}<ChevronDown size={16} /></summary><div>{groups.map((group) => <section key={group.title}><h2>{group.title}</h2>{group.items.map(itemLink)}</section>)}</div></details>
+            {routeLink('/news', t('nav.news'))}{routeLink('/donate', t('nav.donate'))}
+          </nav>
+          <section className="jas-drawer-languages" aria-label={t('language.label')}><h2>{t('language.label')}</h2>{languageOptions()}</section>
+          {isLoggedIn ? <section className="jas-drawer-account">{identity()}{accountItems.map(itemLink)}<button type="button" className="jas-nav-logout" disabled={logoutLoading} onClick={() => void handleLogout()}><LogOut size={17} />{logoutLoading ? t('auth.loggingOut') : t('auth.logout')}</button></section> : !authLoading ? <div className="jas-drawer-auth">{routeLink('/login', t('auth.login'))}{routeLink('/signup', text.join, 'jas-nav-cta')}</div> : null}
+        </div>
+      </dialog> : null}
     </header>
   )
 }
